@@ -1,0 +1,11 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<rect width="200" height="200" rx="24" fill="#78350f"/>
+<rect x="58" y="42" width="84" height="118" rx="42" fill="#f97316"/>
+<path d="M75 55 C35 65 35 145 75 155 C55 120 55 90 75 55Z" fill="#facc15"/>
+<path d="M125 55 C165 65 165 145 125 155 C145 120 145 90 125 55Z" fill="#facc15"/>
+<path d="M100 55 C88 75 115 89 98 108 C83 126 113 137 100 158" stroke="#fde68a" stroke-width="8" fill="none"/>
+<rect x="70" y="80" width="60" height="18" rx="9" fill="#111827"/>
+<circle cx="86" cy="89" r="4" fill="white"/>
+<circle cx="115" cy="89" r="4" fill="white"/>
+<text x="100" y="176" text-anchor="middle" font-size="22" font-family="Arial" fill="white" font-weight="bold">HOTDOG</text>
+</svg>

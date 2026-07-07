@@ -1,0 +1,11 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<rect width="200" height="200" rx="24" fill="#0c4a6e"/>
+<ellipse cx="95" cy="105" rx="58" ry="42" fill="#38bdf8"/>
+<path d="M142 105 L178 75 L178 135Z" fill="#0284c7"/>
+<path d="M65 70 Q90 35 118 72" fill="#7dd3fc"/>
+<circle cx="75" cy="98" r="10" fill="white"/>
+<circle cx="78" cy="100" r="5" fill="#111827"/>
+<path d="M58 125 Q88 150 120 125" stroke="#075985" stroke-width="7" fill="none"/>
+<circle cx="48" cy="112" r="7" fill="#0ea5e9"/>
+<text x="100" y="176" text-anchor="middle" font-size="24" font-family="Arial" fill="white" font-weight="bold">FISH</text>
+</svg>
