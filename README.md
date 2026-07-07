@@ -42,20 +42,6 @@ Open:
 http://localhost:5173
 ```
 
-## Create a private GitHub repo
-
-```bash
-cd crazy-racing
-git init
-git add .
-git commit -m "Initial CRAZY RACING multiplayer scaffold"
-git branch -M main
-git remote add origin git@github.com:YOUR_USERNAME/crazy-racing.git
-git push -u origin main
-```
-
-Create the GitHub repo as **Private** before pushing.
-
 ## Current MVP features
 
 - Create room
