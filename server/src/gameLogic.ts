@@ -1,6 +1,13 @@
 import { nanoid } from "nanoid";
 
-export const RACERS = ["QUEEN", "FISH", "HOTDOG", "LION"];
+export const RACERS = ["LION", "HOTDOG", "FISH", "QUEEN"];
+
+export const TRACK = {
+    spaces: 14,
+    startPosition: 2,
+    finishPosition: 12,
+    starSpaces: [0, 7, 11, 13]
+};
 
 const START_MONEY = 10;
 const MAX_PLAYERS = 9;
@@ -216,15 +223,15 @@ export function finishPayouts(room) {
 }
 
 function createInitialRacers() {
-  return RACERS.map((name, lane) => ({
-    name,
-    lane,
-    position: 0,
-    facing: 1,
-    fallen: false,
-    dq: false,
-    finished: false
-  }));
+    return RACERS.map((name, lane) => ({
+        name,
+        lane,
+        position: TRACK.startPosition,
+        facing: 1,
+        fallen: false,
+        dq: false,
+        finished: false
+    }));
 }
 
 function createRaceDeck(playerCount) {
@@ -325,7 +332,7 @@ function applyCard(room, card) {
       return;
     }
 
-    if (racer.position >= 12) {
+    if (racer.position >= TRACK.finishPosition) {
       finishRacer(room, racer);
       return;
     }
