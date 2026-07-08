@@ -1,0 +1,204 @@
+.crazyBoard {
+    width: 100%;
+    background: #264b1f;
+    border: 4px solid #8b5a2b;
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.boardHeader {
+    display: flex;
+    justify-content: space-between;
+    background: #111827;
+    color: white;
+    padding: 10px 14px;
+}
+
+.boardGrid {
+    display: flex;
+    flex-direction: column;
+}
+
+.boardLane {
+    display: grid;
+    grid-template-columns: 110px repeat(14, 1fr);
+    height: 120px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+    .boardLane:last-child {
+        border-bottom: none;
+    }
+
+.laneLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.25);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.spaceWrapper {
+    position: relative;
+    border-left: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.spaceHidden {
+    opacity: 0.2;
+    background: repeating-linear-gradient( 45deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35) 8px, rgba(255, 255, 255, 0.05) 8px, rgba(255, 255, 255, 0.05) 16px );
+}
+
+.boardSpace {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.foldLine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: white;
+    z-index: 2;
+}
+
+.spaceStar {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #facc15;
+    font-size: 34px;
+    text-shadow: 0 2px 4px black;
+    z-index: 1;
+}
+
+.startMarker {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.finishMarker {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    writing-mode: vertical-rl;
+    text-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    color: black;
+    background: repeating-linear-gradient( 45deg, white, white 7px, black 7px, black 14px );
+    padding: 4px 2px;
+    z-index: 2;
+}
+
+.mascotStack {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+}
+
+.mascot {
+    position: absolute;
+    object-fit: contain;
+    transform-origin: center;
+    transition: transform 250ms ease, left 200ms ease, top 200ms ease, width 200ms ease, height 200ms ease, opacity 250ms ease;
+}
+
+/* 1 mascot: large and centered */
+.mascotCount1 {
+    width: 96%;
+    height: 96%;
+    left: 2%;
+    top: 2%;
+}
+
+/* 2 mascots: side by side */
+.mascotCount2 {
+    width: 74%;
+    height: 74%;
+    top: 13%;
+}
+
+    .mascotCount2.mascotIndex0 {
+        left: -4%;
+    }
+
+    .mascotCount2.mascotIndex1 {
+        left: 30%;
+    }
+
+/* 3 mascots: triangle layout */
+.mascotCount3 {
+    width: 62%;
+    height: 62%;
+}
+
+    .mascotCount3.mascotIndex0 {
+        left: 0%;
+        top: 2%;
+    }
+
+    .mascotCount3.mascotIndex1 {
+        left: 38%;
+        top: 2%;
+    }
+
+    .mascotCount3.mascotIndex2 {
+        left: 19%;
+        top: 38%;
+    }
+
+/* 4 mascots: 2x2 grid */
+.mascotCount4 {
+    width: 55%;
+    height: 55%;
+}
+
+    .mascotCount4.mascotIndex0 {
+        left: 0%;
+        top: 0%;
+    }
+
+    .mascotCount4.mascotIndex1 {
+        left: 45%;
+        top: 0%;
+    }
+
+    .mascotCount4.mascotIndex2 {
+        left: 0%;
+        top: 45%;
+    }
+
+    .mascotCount4.mascotIndex3 {
+        left: 45%;
+        top: 45%;
+    }
+
+.mascot.turnedAround {
+    transform: scaleX(-1);
+}
+
+.mascot.fallen {
+    transform: rotate(90deg);
+}
+
+.mascot.turnedAround.fallen {
+    transform: scaleX(-1) rotate(90deg);
+}
+
+.mascot.dq {
+    opacity: 0.45;
+    filter: grayscale(1);
+}

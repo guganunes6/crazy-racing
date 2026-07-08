@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./styles.css";
+import { Board } from "./board/Board";
 
 const socket = io("http://localhost:3001");
 
@@ -11,11 +12,6 @@ const racerImages = {
   HOTDOG: "/src/assets/hotdog.svg",
   LION: "/src/assets/lion.svg"
 };
-
-const TRACK_SPACES = 14;
-const START_POSITION = 2;
-const FINISH_POSITION = 12;
-const STAR_SPACES = [0, 7, 11, 13];
 
 function App() {
   const [room, setRoom] = useState(null);
@@ -196,7 +192,7 @@ function App() {
 
           {room.phase === "racing" && (
             <div>
-              <Track racers={room.racers} />
+              <Board racers={room.racers} shortenedBy={room.shortenedBy ?? 0} />
               <CurrentCard card={room.currentCard} />
               <button onClick={stepRace}>Flip Next Card</button>
             </div>
@@ -243,51 +239,6 @@ function App() {
       </section>
     </main>
   );
-}
-
-function Track({ racers }) {
-    return (
-        <div className="track">
-            <div
-                className="finishLine"
-                style={{ left: `${(FINISH_POSITION / (TRACK_SPACES - 1)) * 100}%` }}
-            />
-
-            <div
-                className="startLine"
-                style={{ left: `${(START_POSITION / (TRACK_SPACES - 1)) * 100}%` }}
-            />
-
-            {racers.map((racer) => (
-                <div className="lane" key={racer.name}>
-                    {Array.from({ length: TRACK_SPACES }).map((_, index) => (
-                        <div
-                            key={index}
-                            className={`spaceMarker ${index % 4 === 0 ? "longMarker" : "smallMarker"
-                                }`}
-                            style={{ left: `${(index / (TRACK_SPACES - 1)) * 100}%` }}
-                        >
-                            {STAR_SPACES.includes(index) && <span className="star">★</span>}
-                        </div>
-                    ))}
-
-                    <img
-                        className={`racerToken ${racer.fallen ? "fallen" : ""} ${racer.dq ? "dq" : ""
-                            }`}
-                        src={racerImages[racer.name]}
-                        style={{
-                            left: `${(Math.min(Math.max(racer.position, 0), TRACK_SPACES - 1) /
-                                    (TRACK_SPACES - 1)) *
-                                100
-                                }%`
-                        }}
-                    />
-
-                    <span className="laneName">{racer.name}</span>
-                </div>
-            ))}
-        </div>
-    );
 }
 
 function CurrentCard({ card }) {

@@ -1,256 +1,156 @@
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #101827;
-  color: #f8fafc;
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #101827;
+    color: #f8fafc;
 }
 
 button,
 input {
-  border: 0;
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 16px;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 16px;
 }
 
 button {
-  background: #f59e0b;
-  color: #111827;
-  font-weight: 700;
-  cursor: pointer;
-  margin: 6px;
+    background: #f59e0b;
+    color: #111827;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 6px;
 }
 
 input {
-  background: #1f2937;
-  color: white;
-  border: 1px solid #334155;
-  margin: 6px;
+    background: #1f2937;
+    color: white;
+    border: 1px solid #334155;
+    margin: 6px;
 }
 
 .page {
-  min-height: 100vh;
-  padding: 20px;
+    min-height: 100vh;
+    padding: 20px;
 }
 
 .center {
-  display: grid;
-  place-items: center;
+    display: grid;
+    place-items: center;
 }
 
 .card {
-  background: #172033;
-  border: 1px solid #334155;
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    background: #172033;
+    border: 1px solid #334155;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 
 .menu {
-  width: 420px;
-  display: flex;
-  flex-direction: column;
+    width: 420px;
+    display: flex;
+    flex-direction: column;
 }
 
-.menu h1,
-.topbar h1 {
-  color: #facc15;
-  letter-spacing: 1px;
-}
+    .menu h1,
+    .topbar h1 {
+        color: #facc15;
+        letter-spacing: 1px;
+    }
 
 .separator {
-  text-align: center;
-  opacity: .6;
-  margin: 10px 0;
+    text-align: center;
+    opacity: 0.6;
+    margin: 10px 0;
 }
 
 .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: 280px 1fr 300px;
-  gap: 16px;
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap: 16px;
 }
 
 .mainpanel {
-  min-height: 700px;
+    min-height: 700px;
 }
 
 .player,
 .result {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  background: #0f172a;
-  padding: 10px;
-  border-radius: 10px;
-  margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 8px;
 }
 
 .error {
-  color: #fecaca;
-  background: #7f1d1d;
-  padding: 10px;
-  border-radius: 10px;
+    color: #fecaca;
+    background: #7f1d1d;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .racers {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
 .racerBadge {
-  text-align: center;
-  background: #0f172a;
-  padding: 10px;
-  border-radius: 12px;
+    text-align: center;
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 12px;
 }
 
-.racerBadge img {
-  width: 80px;
-  height: 80px;
-}
+    .racerBadge img {
+        width: 80px;
+        height: 80px;
+    }
 
 .cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .gamecard {
-  width: 130px;
-  min-height: 150px;
-  background: #fef3c7;
-  color: #111827;
-  border: 4px solid transparent;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
+    width: 130px;
+    min-height: 150px;
+    background: #fef3c7;
+    color: #111827;
+    border: 4px solid transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
 }
 
-.gamecard.selected {
-  border-color: #22c55e;
-}
-
-.track {
-    position: relative;
-    background: linear-gradient( to bottom, rgba(255,255,255,.08) 0%, rgba(255,255,255,.08) 25%, rgba(0,0,0,.08) 25%, rgba(0,0,0,.08) 50%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.08) 75%, rgba(0,0,0,.08) 75%, rgba(0,0,0,.08) 100% ), #365314;
-    border-radius: 18px;
-    padding: 12px 40px 12px 12px;
-    overflow: hidden;
-    border: 4px solid #78350f;
-}
-
-.lane {
-    height: 120px;
-    position: relative;
-    border-bottom: 2px dashed rgba(255,255,255,.25);
-}
-
-    .lane:last-child {
-        border-bottom: 0;
+    .gamecard.selected {
+        border-color: #22c55e;
     }
-
-.laneName {
-    position: absolute;
-    left: 8px;
-    top: 8px;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px black;
-    z-index: 4;
-}
-
-.spaceMarker {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-}
-
-.smallMarker::after {
-    content: "";
-    display: block;
-    width: 24px;
-    height: 5px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.75);
-}
-
-.longMarker::after {
-    content: "";
-    display: block;
-    width: 4px;
-    height: 96px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.65);
-}
-
-.star {
-    position: absolute;
-    top: -48px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #fef3c7;
-    font-size: 32px;
-}
-
-.racerToken {
-    position: absolute;
-    top: 50%;
-    width: 82px;
-    height: 82px;
-    transform: translate(-50%, -50%);
-    transition: left .3s ease, transform .3s ease;
-    z-index: 3;
-}
-
-    .racerToken.fallen {
-        transform: translate(-50%, -50%) rotate(90deg);
-    }
-
-    .racerToken.dq {
-        filter: grayscale(1);
-        opacity: .5;
-    }
-
-.startLine,
-.finishLine {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-50%);
-    z-index: 2;
-}
-
-.startLine {
-    width: 6px;
-    background: rgba(255,255,255,.85);
-}
-
-.finishLine {
-    width: 18px;
-    background: repeating-linear-gradient( 45deg, white, white 7px, black 7px, black 14px );
-}
 
 .currentCard {
-  margin-top: 20px;
-  background: #0f172a;
-  padding: 16px;
-  border-radius: 12px;
+    margin-top: 20px;
+    background: #0f172a;
+    padding: 16px;
+    border-radius: 12px;
 }
 
 .log {
-  max-height: 360px;
-  overflow: auto;
-  font-size: 14px;
+    max-height: 360px;
+    overflow: auto;
+    font-size: 14px;
 }
