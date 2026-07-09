@@ -1,11 +1,6 @@
 export type RacerName = "LION" | "HOTDOG" | "FISH" | "QUEEN";
 
-export const LANE_ORDER: RacerName[] = [
-    "LION",
-    "HOTDOG",
-    "FISH",
-    "QUEEN"
-];
+export const LANE_ORDER: RacerName[] = ["LION", "HOTDOG", "FISH", "QUEEN"];
 
 export const BOARD = {
     lanes: 4,
@@ -26,6 +21,13 @@ export type RacerOnBoard = {
     finished?: boolean;
 };
 
+export type PodiumEntry = {
+    place?: number;
+    racer: RacerName;
+    status: "finished" | "DQ" | "remaining";
+    reason?: string;
+};
+
 export function isStar(position: number) {
     return BOARD.stars.includes(position);
 }
@@ -38,7 +40,7 @@ export function isFinish(position: number) {
     return position === BOARD.finish;
 }
 
-export function isFoldLineBefore(position: number) {
+export function hasFoldLineBefore(position: number) {
     return BOARD.foldLines.includes(position);
 }
 

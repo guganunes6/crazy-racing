@@ -3,25 +3,27 @@
     isStar,
     isStart,
     isFinish,
-    isFoldLineBefore
+    hasFoldLineBefore
 } from "./BoardModel";
 import { Mascot } from "./Mascot";
 
 type SpaceProps = {
     position: number;
+    hidden: boolean;
     racers: RacerOnBoard[];
 };
 
-export function Space({ position, racers }: SpaceProps) {
+export function Space({ position, hidden, racers }: SpaceProps) {
     return (
-        <div className="boardSpace">
-            {isFoldLineBefore(position) && <div className="foldLine" />}
-
+        <div
+            className={`boardSpace ${hidden ? "hiddenSpace" : ""} ${hasFoldLineBefore(position) ? "foldBoundary" : ""
+                }`}
+        >
             {isStar(position) && <div className="spaceStar">★</div>}
 
-            {isStart(position) && <div className="startMarker">START</div>}
+            {isStart(position) && <div className="startFlag">START</div>}
 
-            {isFinish(position) && <div className="finishMarker">FINISH</div>}
+            {isFinish(position) && <div className="finishGate">FINISH</div>}
 
             <div className={`mascotStack mascotStackCount${racers.length}`}>
                 {racers.map((racer, index) => (

@@ -23,40 +23,47 @@ app.use(cors());
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
+    cors: {
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST"]
+    }
 });
 
-const rooms = new Map();
+type Room = ReturnType<typeof createRoom>;
+
+const rooms = new Map<string, Room>();
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+    res.json({ ok: true });
 });
 
-function publicRoom(room) {
-  return {
-    roomCode: room.roomCode,
-    hostSocketId: room.hostSocketId,
-    phase: room.phase,
-    raceNumber: room.raceNumber,
-    players: room.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      ready: p.ready,
-      money: p.money,
-      handCount: p.hand.length,
-      bets: p.bets
-    })),
-    racers: room.racers,
-    podium: room.podium,
-    raceLog: room.raceLog.slice(-10),
-    currentCard: room.currentCard
-  };
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : "Unknown error";
 }
 
-function emitRoom(room) {
+function publicRoom(room: Room) {
+    return {
+        roomCode: room.roomCode,
+        hostSocketId: room.hostSocketId,
+        phase: room.phase,
+        raceNumber: room.raceNumber,
+        shortenedBy: room.shortenedBy,
+        players: room.players.map((p) => ({
+            id: p.id,
+            name: p.name,
+            ready: p.ready,
+            money: p.money,
+            handCount: p.hand.length,
+            bets: p.bets
+        })),
+        racers: room.racers,
+        podium: room.podium,
+        raceLog: room.raceLog.slice(-10),
+        currentCard: room.currentCard
+    };
+}
+
+function emitRoom(room: Room) {
   io.to(room.roomCode).emit("room:update", publicRoom(room));
 
   for (const player of room.players) {
@@ -76,7 +83,7 @@ io.on("connection", (socket) => {
       callback({ ok: true, roomCode: room.roomCode });
       emitRoom(room);
     } catch (error) {
-      callback({ ok: false, error: error.message });
+        callback({ ok: false, error: getErrorMessage(error) });
     }
   });
 
@@ -90,7 +97,7 @@ io.on("connection", (socket) => {
       callback({ ok: true, roomCode: room.roomCode });
       emitRoom(room);
     } catch (error) {
-      callback({ ok: false, error: error.message });
+        callback({ ok: false, error: getErrorMessage(error) });
     }
   });
 
@@ -113,7 +120,7 @@ io.on("connection", (socket) => {
       emitRoom(room);
       callback({ ok: true });
     } catch (error) {
-      callback({ ok: false, error: error.message });
+        callback({ ok: false, error: getErrorMessage(error) });
     }
   });
 
@@ -139,7 +146,7 @@ io.on("connection", (socket) => {
       emitRoom(room);
       callback({ ok: true });
     } catch (error) {
-      callback({ ok: false, error: error.message });
+        callback({ ok: false, error: getErrorMessage(error) });
     }
   });
 

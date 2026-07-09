@@ -16,29 +16,26 @@ export function Lane({
 }: LaneProps) {
     return (
         <div className="boardLane">
-            <div className="laneLabel">
-                {laneIndex + 1}. {laneName}
-            </div>
+            <div className="laneNamePlate">{laneName}</div>
 
             {Array.from({ length: BOARD.spacesPerLane }).map((_, position) => {
                 const hidden = position < visibleStartPosition;
 
+                const racersInSpace = racers.filter(
+                    (racer) =>
+                        racer.lane === laneIndex &&
+                        racer.position === position &&
+                        !racer.finished &&
+                        !racer.dq
+                );
+
                 return (
-                    <div
+                    <Space
                         key={position}
-                        className={`spaceWrapper ${hidden ? "spaceHidden" : ""}`}
-                    >
-                        <Space
-                            position={position}
-                            racers={racers.filter(
-                                (racer) =>
-                                    racer.lane === laneIndex &&
-                                    racer.position === position &&
-                                    !racer.finished &&
-                                    !racer.dq
-                            )}
-                        />
-                    </div>
+                        position={position}
+                        hidden={hidden}
+                        racers={racersInSpace}
+                    />
                 );
             })}
         </div>

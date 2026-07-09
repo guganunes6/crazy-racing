@@ -15,22 +15,24 @@ export function Board({ racers, shortenedBy = 0 }: BoardProps) {
     const visibleStartPosition = getVisibleStartPosition(shortenedBy);
 
     return (
-        <section className="crazyBoard">
-            <div className="boardHeader">
-                <strong>Race Track</strong>
-                <span>Shortened by: {shortenedBy}</span>
-            </div>
+        <section className="boardScene">
+            <div className="boardFrame">
+                <div className="boardTitle">
+                    <span>CRAZY RACING TRACK</span>
+                    <span>Fold level: {shortenedBy}</span>
+                </div>
 
-            <div className="boardGrid">
-                {LANE_ORDER.map((laneName, laneIndex) => (
-                    <Lane
-                        key={laneName}
-                        laneIndex={laneIndex}
-                        laneName={laneName}
-                        racers={racers}
-                        visibleStartPosition={visibleStartPosition}
-                    />
-                ))}
+                <div className="trackMat">
+                    {LANE_ORDER.map((laneName, laneIndex) => (
+                        <Lane
+                            key={laneName}
+                            laneIndex={laneIndex}
+                            laneName={laneName}
+                            racers={racers}
+                            visibleStartPosition={visibleStartPosition}
+                        />
+                    ))}
+                </div>
             </div>
         </section>
     );

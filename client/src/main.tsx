@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./styles.css";
 import { Board } from "./board/Board";
+import { Podium } from "./board/Podium";
 
 const socket = io("http://localhost:3001");
 
@@ -230,7 +231,7 @@ function App() {
               </div>
             ))}
           </div>
-
+          <Podium podium={room.podium ?? []} />
           <h2>Race Log</h2>
           <div className="log">
             {room.raceLog.map((line, i) => <p key={i}>{line}</p>)}
@@ -247,18 +248,6 @@ function CurrentCard({ card }) {
   return (
     <div className="currentCard">
       <strong>{card.racer}</strong> — {card.type} {card.value ?? ""}
-    </div>
-  );
-}
-
-function Podium({ podium }) {
-  return (
-    <div>
-      {podium.map((entry, i) => (
-        <div className="result" key={entry.racer}>
-          #{i + 1} {entry.racer} {entry.status === "DQ" ? "(DQ)" : ""}
-        </div>
-      ))}
     </div>
   );
 }
