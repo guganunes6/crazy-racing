@@ -18,7 +18,7 @@ export function Lane({
         <div className="boardLane">
             <div className="laneNamePlate">{laneName}</div>
 
-            {Array.from({ length: BOARD.spacesPerLane }).map((_, position) => {
+            {Array.from({ length: BOARD.spaceCount }).map((_, position) => {
                 const hidden = position < visibleStartPosition;
 
                 const racersInSpace = racers.filter(

@@ -1,16 +1,19 @@
 import { nanoid } from "nanoid";
 
-export const RACERS = ["LION", "HOTDOG", "FISH", "QUEEN"] as const;
-
-export const TRACK = {
-    spaces: 14,
-    startPosition: 2,
-    finishPosition: 12,
-    starSpaces: [0, 7, 12, 13],
-    foldLines: [3, 6, 10]
-};
-
-type RacerName = (typeof RACERS)[number];
+import {
+    BOARD,
+    RACERS,
+    type RacerName,
+    type RacerState,
+    type PodiumEntry,
+    type RaceCard,
+    MAX_PLAYERS,
+    MIN_PLAYERS,
+    STARTING_MONEY,
+    SECRET_CARDS_TWO_PLAYERS,
+    SECRET_CARDS_OTHER,
+    visibleStart
+} from "@crazy-racing/shared";
 
 type GamePhase =
     | "lobby"
@@ -19,19 +22,6 @@ type GamePhase =
     | "racing"
     | "payouts"
     | "final";
-
-type RaceCard = {
-    id: string;
-    type:
-    | "move"
-    | "fall"
-    | "turn"
-    | "recover"
-    | "swerve-left"
-    | "swerve-right";
-    racer: RacerName;
-    value: number | null;
-};
 
 type Player = {
     id: string;
@@ -45,23 +35,6 @@ type Player = {
         racer: RacerName;
         risk: "safe" | "risky";
     }[];
-};
-
-type RacerState = {
-    name: RacerName;
-    lane: number;
-    position: number;
-    facing: number;
-    fallen: boolean;
-    dq: boolean;
-    finished: boolean;
-};
-
-type PodiumEntry = {
-    place?: number;
-    racer: RacerName;
-    status: "finished" | "DQ" | "remaining";
-    reason?: string;
 };
 
 type Room = {
@@ -80,10 +53,6 @@ type Room = {
     createdAt: number;
 };
 
-const START_MONEY = 10;
-const MAX_PLAYERS = 9;
-const MIN_PLAYERS = 2;
-
 export function createRoom(hostSocketId: string, hostName: string): Room {
     const roomCode = nanoid(6).toUpperCase();
 
@@ -98,7 +67,7 @@ export function createRoom(hostSocketId: string, hostName: string): Room {
                 id: hostSocketId,
                 name: hostName || "Host",
                 ready: false,
-                money: START_MONEY,
+                money: STARTING_MONEY,
                 hand: [],
                 selectedSecretCards: [],
                 bets: []
@@ -127,7 +96,7 @@ export function addPlayer(room: Room, socketId: string, name: string) {
         id: socketId,
         name: name || `Player ${room.players.length + 1}`,
         ready: false,
-        money: START_MONEY,
+        money: STARTING_MONEY,
         hand: [],
         selectedSecretCards: [],
         bets: []
@@ -165,7 +134,7 @@ export function startGame(room: Room) {
     room.shortenedBy = 0;
 
     room.players.forEach((p) => {
-        p.money = START_MONEY;
+        p.money = STARTING_MONEY;
         p.bets = [];
         p.selectedSecretCards = [];
     });
@@ -219,7 +188,10 @@ export function submitSecretCards(
     const player = room.players.find((p) => p.id === socketId);
     if (!player) return;
 
-    const needed = room.players.length === 2 ? 2 : 1;
+    const needed =
+        room.players.length === 2
+            ? SECRET_CARDS_TWO_PLAYERS
+            : SECRET_CARDS_OTHER;
 
     const selected = player.hand
         .filter((card) => cardIds.includes(card.id))
@@ -233,7 +205,10 @@ export function submitSecretCards(
 }
 
 export function allSecretCardsSubmitted(room: Room) {
-    const needed = room.players.length === 2 ? 2 : 1;
+    const needed =
+        room.players.length === 2
+            ? SECRET_CARDS_TWO_PLAYERS
+            : SECRET_CARDS_OTHER;
     return room.players.every((p) => p.selectedSecretCards.length === needed);
 }
 
@@ -309,7 +284,7 @@ function createInitialRacers(): RacerState[] {
     return RACERS.map((name, lane) => ({
         name,
         lane,
-        position: TRACK.startPosition,
+        position: BOARD.startPosition,
         facing: 1,
         fallen: false,
         dq: false,
@@ -438,7 +413,7 @@ function applyCard(room: Room, card: RaceCard) {
             return;
         }
 
-        if (racer.position >= TRACK.finishPosition) {
+        if (racer.position >= BOARD.finishPosition) {
             finishRacer(room, racer);
             return;
         }
@@ -451,7 +426,7 @@ function applyCard(room: Room, card: RaceCard) {
 function handleReshuffle(room: Room) {
     room.raceLog.push("Deck empty. Reshuffling discard pile.");
 
-    room.shortenedBy = Math.min(room.shortenedBy + 1, TRACK.foldLines.length);
+    room.shortenedBy = Math.min(room.shortenedBy + 1, BOARD.foldLines.length);
 
     const visibleStartPosition = getVisibleStartPosition(room.shortenedBy);
 
@@ -474,8 +449,7 @@ function handleReshuffle(room: Room) {
 }
 
 function getVisibleStartPosition(shortenedBy: number) {
-    if (shortenedBy <= 0) return 0;
-    return TRACK.foldLines[shortenedBy - 1] ?? 0;
+    return visibleStart(shortenedBy);
 }
 
 function burnThreeCards(room: Room) {

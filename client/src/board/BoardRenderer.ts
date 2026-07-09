@@ -1,7 +1,7 @@
-import { BOARD } from "./BoardModel";
+import { BOARD } from "@crazy-racing/shared";
 
 export function getSpacePercentage(position: number) {
-    return `${(position / BOARD.spacesPerLane) * 100}%`;
+    return `${(position / BOARD.spaceCount) * 100}%`;
 }
 
 export function getFoldLabel(index: number) {

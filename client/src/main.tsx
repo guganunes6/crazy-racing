@@ -8,10 +8,12 @@ import { Podium } from "./board/Podium";
 const socket = io("http://localhost:3001");
 
 const racerImages = {
-  QUEEN: "/src/assets/queen.svg",
-  FISH: "/src/assets/fish.svg",
+  LION: "/src/assets/lion.svg",
   HOTDOG: "/src/assets/hotdog.svg",
-  LION: "/src/assets/lion.svg"
+  FISH: "/src/assets/fish.svg",
+  QUEEN: "/src/assets/queen.svg"
+  
+  
 };
 
 function App() {
@@ -224,7 +226,7 @@ function App() {
         <aside className="card">
           <h2>Racers</h2>
           <div className="racers">
-            {["QUEEN", "FISH", "HOTDOG", "LION"].map((name) => (
+            {["LION", "HOTDOG", "FISH", "QUEEN"].map((name) => (
               <div key={name} className="racerBadge">
                 <img src={racerImages[name]} />
                 <strong>{name}</strong>
