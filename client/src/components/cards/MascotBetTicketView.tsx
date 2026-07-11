@@ -1,0 +1,131 @@
+import type {
+    BetRiskSide,
+    BetTicketTier,
+    RacerName
+} from "@crazy-racing/shared";
+import {
+    createMascotBetTicket
+} from "@crazy-racing/shared";
+import "./BettingTicket.css";
+
+type MascotBetTicketViewProps = {
+    racer: RacerName;
+    tier: BetTicketTier;
+    selectedSide?: BetRiskSide | null;
+    disabled?: boolean;
+    onSelectSide?: (side: BetRiskSide) => void;
+};
+
+const racerImages: Record<RacerName, string> = {
+    LION: "/src/assets/lion.svg",
+    HOTDOG: "/src/assets/hotdog.svg",
+    FISH: "/src/assets/fish.svg",
+    QUEEN: "/src/assets/queen.svg"
+};
+
+export function MascotBetTicketView({
+    racer,
+    tier,
+    selectedSide = null,
+    disabled = false,
+    onSelectSide
+}: MascotBetTicketViewProps) {
+    const safeTicket = createMascotBetTicket(racer, tier, "safe");
+    const riskyTicket = createMascotBetTicket(racer, tier, "risky");
+
+    return (
+        <article
+            className={`betTicket mascotTicket mascotTicket${capitalize(racer)}`}
+        >
+            <header className="betTicketHeader mascotBetTicketHeader">
+                <span>{racer}</span>
+
+                <img
+                    src={racerImages[racer]}
+                    alt={racer}
+                    className="betTicketMascotImage"
+                />
+
+                <strong>{capitalize(tier)} bet</strong>
+            </header>
+
+            <div className="ticketSides">
+                <TicketSideButton
+                    label="SAFE"
+                    selected={selectedSide === "safe"}
+                    disabled={disabled}
+                    onClick={() => onSelectSide?.("safe")}
+                >
+                    <MascotPayoutTable ticket={safeTicket} />
+                </TicketSideButton>
+
+                <TicketSideButton
+                    label="RISKY"
+                    selected={selectedSide === "risky"}
+                    disabled={disabled}
+                    onClick={() => onSelectSide?.("risky")}
+                >
+                    <MascotPayoutTable ticket={riskyTicket} />
+                </TicketSideButton>
+            </div>
+        </article>
+    );
+}
+
+function MascotPayoutTable({
+    ticket
+}: {
+    ticket: ReturnType<typeof createMascotBetTicket>;
+}) {
+    return (
+        <div className="payoutTable">
+            <div>
+                <span>1st</span>
+                <strong>${ticket.payouts.first}</strong>
+            </div>
+
+            <div>
+                <span>2nd</span>
+                <strong>${ticket.payouts.second}</strong>
+            </div>
+
+            <div>
+                <span>3rd</span>
+                <strong>${ticket.payouts.third}</strong>
+            </div>
+        </div>
+    );
+}
+
+type TicketSideButtonProps = {
+    label: string;
+    selected: boolean;
+    disabled: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+};
+
+function TicketSideButton({
+    label,
+    selected,
+    disabled,
+    onClick,
+    children
+}: TicketSideButtonProps) {
+    return (
+        <button
+            type="button"
+            className={`ticketSide ${selected ? "ticketSideSelected" : ""
+                }`}
+            disabled={disabled}
+            onClick={onClick}
+        >
+            <span className="ticketSideLabel">{label}</span>
+            {children}
+        </button>
+    );
+}
+
+function capitalize(value: string) {
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}

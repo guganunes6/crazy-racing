@@ -1,0 +1,169 @@
+.betTicket {
+    width: 320px;
+    overflow: hidden;
+    border: 3px solid #475569;
+    border-radius: 18px;
+    background: #172033;
+    color: #f8fafc;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
+}
+
+.betTicketHeader {
+    padding: 12px 14px;
+    background: rgba(15, 23, 42, 0.85);
+}
+
+.mascotBetTicketHeader {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 92px 1fr;
+    align-items: center;
+    min-height: 104px;
+    gap: 8px;
+}
+
+    .mascotBetTicketHeader span {
+        justify-self: start;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+    }
+
+    .mascotBetTicketHeader strong {
+        justify-self: end;
+        text-align: right;
+        font-size: 13px;
+    }
+
+.betTicketMascotImage {
+    justify-self: center;
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 7px rgba(0, 0, 0, 0.35));
+}
+
+.sideBetTicket .betTicketHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+    .sideBetTicket .betTicketHeader span {
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+    }
+
+    .sideBetTicket .betTicketHeader strong {
+        font-size: 13px;
+    }
+
+.mascotTicketLion {
+    border-color: #7e22ce;
+    background: linear-gradient( 145deg, rgba(76, 29, 111, 0.55), rgba(36, 16, 56, 0.7) ), #172033;
+}
+
+.mascotTicketHotdog {
+    border-color: #f97316;
+    background: linear-gradient( 145deg, rgba(234, 88, 12, 0.35), rgba(124, 45, 18, 0.55) ), #172033;
+}
+
+.mascotTicketFish {
+    border-color: #0ea5e9;
+    background: linear-gradient( 145deg, rgba(2, 132, 199, 0.35), rgba(12, 74, 110, 0.55) ), #172033;
+}
+
+.mascotTicketQueen {
+    border-color: #e11d48;
+    background: linear-gradient( 145deg, rgba(190, 18, 60, 0.35), rgba(76, 5, 25, 0.55) ), #172033;
+}
+
+.sideBetAnswerYES {
+    border-color: #22c55e;
+}
+
+.sideBetAnswerNO {
+    border-color: #ef4444;
+}
+
+.ticketSides {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+}
+
+.ticketSide {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 132px;
+    margin: 0;
+    padding: 10px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 3px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 180ms ease, transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+}
+
+    .ticketSide:hover:not(:disabled) {
+        border-color: #94a3b8;
+        transform: translateY(-2px);
+    }
+
+.ticketSideSelected {
+    border-color: #facc15;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18);
+}
+
+.ticketSide:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.ticketSideLabel {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.payoutTable,
+.sidePayoutTable {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+    .payoutTable div,
+    .sidePayoutTable div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: #1e293b;
+    }
+
+    .payoutTable span,
+    .sidePayoutTable span {
+        color: #cbd5e1;
+        font-size: 12px;
+    }
+
+    .payoutTable strong,
+    .sidePayoutTable strong {
+        color: #facc15;
+    }
+
+.sideBetQuestion {
+    min-height: 72px;
+    margin: 0;
+    padding: 14px;
+    line-height: 1.35;
+    background: rgba(15, 23, 42, 0.35);
+}

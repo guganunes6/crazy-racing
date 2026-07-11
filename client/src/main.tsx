@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
 import "./styles.css";
+import { CardGallery } from "./components/cards/CardGallery";
 
 const socket = io("http://localhost:3001");
 
@@ -190,14 +191,11 @@ function App() {
 
                     {room.phase === "betting" && (
                         <div>
-                            <p>
-                                This starter version auto-assigns demo bets. The full ticket
-                                draft is the next feature.
-                            </p>
+                            <CardGallery />
 
                             {room.hostSocketId === socket.id && (
                                 <button onClick={autoDemoBetting}>
-                                    Auto Assign Demo Bets
+                                    Continue with demo betting
                                 </button>
                             )}
                         </div>

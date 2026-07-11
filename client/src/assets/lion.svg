@@ -1,12 +1,19 @@
 <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-<rect width="200" height="200" rx="24" fill="#14532d"/>
-<circle cx="100" cy="103" r="62" fill="#92400e"/>
-<circle cx="100" cy="105" r="43" fill="#fbbf24"/>
-<circle cx="82" cy="98" r="7" fill="#111827"/>
-<circle cx="118" cy="98" r="7" fill="#111827"/>
-<path d="M94 112 L106 112 L100 121Z" fill="#111827"/>
-<path d="M80 132 Q100 145 120 132" stroke="#7c2d12" stroke-width="6" fill="none"/>
-<circle cx="54" cy="82" r="20" fill="#92400e"/>
-<circle cx="146" cy="82" r="20" fill="#92400e"/>
-<text x="100" y="176" text-anchor="middle" font-size="24" font-family="Arial" fill="white" font-weight="bold">LION</text>
+  <rect width="200" height="200" rx="24" fill="#3b185f"></rect>
+
+  <circle cx="100" cy="96" r="62" fill="#92400e"></circle>
+  <circle cx="100" cy="98" r="43" fill="#fbbf24"></circle>
+
+  <circle cx="82" cy="91" r="7" fill="#111827"></circle>
+  <circle cx="118" cy="91" r="7" fill="#111827"></circle>
+
+  <path d="M94 105 L106 105 L100 114Z" fill="#111827"></path>
+  <path d="M80 125 Q100 138 120 125" stroke="#7c2d12" stroke-width="6" fill="none"></path>
+
+  <circle cx="54" cy="75" r="20" fill="#92400e"></circle>
+  <circle cx="146" cy="75" r="20" fill="#92400e"></circle>
+
+  <text x="100" y="176" text-anchor="middle" font-size="24" font-family="Arial" fill="white" font-weight="bold">
+    LION
+  </text>
 </svg>

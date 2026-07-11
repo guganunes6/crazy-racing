@@ -1,0 +1,175 @@
+.raceCardView {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 4px solid transparent;
+    border-radius: 16px;
+    padding: 12px;
+    color: #f8fafc;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    transition: transform 180ms ease, border-color 180ms ease, opacity 180ms ease;
+}
+
+    .raceCardView:hover:not(:disabled) {
+        transform: translateY(-3px);
+    }
+
+.raceCardFull {
+    width: 190px;
+    min-height: 270px;
+}
+
+.raceCardCompact {
+    width: 145px;
+    min-height: 210px;
+    padding: 9px;
+}
+
+.raceCardLion {
+    background: linear-gradient(145deg, #4c1d6f, #241038);
+}
+
+.raceCardHotdog {
+    background: linear-gradient(145deg, #ea580c, #7c2d12);
+}
+
+.raceCardFish {
+    background: linear-gradient(145deg, #0284c7, #0c4a6e);
+}
+
+.raceCardQueen {
+    background: linear-gradient(145deg, #be123c, #4c0519);
+}
+
+.raceCardGreen {
+    background: linear-gradient(145deg, #16a34a, #14532d);
+}
+
+.raceCardSelected {
+    border-color: #facc15;
+    transform: translateY(-4px);
+}
+
+.raceCardDisabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+    filter: grayscale(0.55);
+}
+
+.raceCardHeader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 28px;
+    text-align: center;
+}
+
+.raceCardOwner {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-align: center;
+}
+
+.raceCardCompact .raceCardOwner {
+    font-size: 11px;
+}
+
+.raceCardMascotImageWrapper {
+    flex: 1;
+    min-height: 92px;
+    display: grid;
+    place-items: center;
+}
+
+.raceCardMascotImage {
+    width: 108px;
+    height: 108px;
+    object-fit: contain;
+    filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.3));
+}
+
+.raceCardCompact .raceCardMascotImageWrapper {
+    min-height: 68px;
+}
+
+.raceCardCompact .raceCardMascotImage {
+    width: 76px;
+    height: 76px;
+}
+
+.raceCardEveryoneImages {
+    flex: 1;
+    min-height: 105px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    place-items: center;
+    gap: 2px;
+}
+
+.raceCardEveryoneImage {
+    width: 67px;
+    height: 67px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.25));
+}
+
+.raceCardCompact .raceCardEveryoneImages {
+    min-height: 76px;
+}
+
+.raceCardCompact .raceCardEveryoneImage {
+    width: 45px;
+    height: 45px;
+}
+
+.raceCardActions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.raceCardActionRow,
+.raceCardRuleBubble {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.5);
+    text-align: center;
+}
+
+.raceCardRuleBubble {
+    color: #dcfce7;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+}
+
+.raceCardThen {
+    font-size: 9px;
+    color: #cbd5e1;
+    letter-spacing: 0.16em;
+}
+
+.raceCardActionRow strong {
+    font-size: 13px;
+}
+
+.raceCardCompact .raceCardActionRow {
+    padding: 6px;
+}
+
+    .raceCardCompact .raceCardActionRow strong {
+        font-size: 10px;
+    }
+
+.raceCardCompact .raceCardThen,
+.raceCardCompact .raceCardRuleBubble {
+    font-size: 7px;
+}
