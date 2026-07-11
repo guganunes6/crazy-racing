@@ -1,18 +1,21 @@
 import { nanoid } from "nanoid";
-
 import {
     BOARD,
     RACERS,
+    STARTING_MONEY,
+    MAX_PLAYERS,
+    MIN_PLAYERS,
+    SECRET_CARDS_TWO_PLAYERS,
+    SECRET_CARDS_OTHER,
+    visibleStart,
+    CARD_CATALOG,
     type RacerName,
     type RacerState,
     type PodiumEntry,
     type RaceCard,
-    MAX_PLAYERS,
-    MIN_PLAYERS,
-    STARTING_MONEY,
-    SECRET_CARDS_TWO_PLAYERS,
-    SECRET_CARDS_OTHER,
-    visibleStart
+    type RaceCardDefinition,
+    type CardType,
+    type CardAction
 } from "@crazy-racing/shared";
 
 type GamePhase =
@@ -84,13 +87,8 @@ export function createRoom(hostSocketId: string, hostName: string): Room {
 }
 
 export function addPlayer(room: Room, socketId: string, name: string) {
-    if (room.players.length >= MAX_PLAYERS) {
-        throw new Error("Room is full.");
-    }
-
-    if (room.phase !== "lobby") {
-        throw new Error("Game already started.");
-    }
+    if (room.players.length >= MAX_PLAYERS) throw new Error("Room is full.");
+    if (room.phase !== "lobby") throw new Error("Game already started.");
 
     room.players.push({
         id: socketId,
@@ -125,9 +123,7 @@ export function canStart(room: Room) {
 }
 
 export function startGame(room: Room) {
-    if (!canStart(room)) {
-        throw new Error("Need 2–9 ready players.");
-    }
+    if (!canStart(room)) throw new Error("Need 2–9 ready players.");
 
     room.phase = "betting";
     room.raceNumber = 1;
@@ -149,7 +145,6 @@ export function setupRace(room: Room) {
     room.raceLog = [];
     room.currentCard = null;
     room.discard = [];
-
     room.deck = createRaceDeck(room.players.length);
 
     const handSize = room.players.length === 2 ? 4 : 3;
@@ -166,12 +161,10 @@ export function setupRace(room: Room) {
 
 export function autoAssignDemoBets(room: Room) {
     room.players.forEach((p, index) => {
-        const racer = RACERS[index % RACERS.length];
-
         p.bets = [
             {
                 type: "mascot",
-                racer,
+                racer: RACERS[index % RACERS.length],
                 risk: "safe"
             }
         ];
@@ -209,21 +202,19 @@ export function allSecretCardsSubmitted(room: Room) {
         room.players.length === 2
             ? SECRET_CARDS_TWO_PLAYERS
             : SECRET_CARDS_OTHER;
+
     return room.players.every((p) => p.selectedSecretCards.length === needed);
 }
 
 export function beginRace(room: Room) {
     for (const player of room.players) {
-        for (const card of player.selectedSecretCards) {
-            room.deck.push(card);
-        }
+        room.deck.push(...player.selectedSecretCards);
 
         const selectedIds = new Set(player.selectedSecretCards.map((c) => c.id));
         player.hand = player.hand.filter((c) => !selectedIds.has(c.id));
     }
 
     shuffle(room.deck);
-
     burnThreeCards(room);
 
     room.phase = "racing";
@@ -257,10 +248,8 @@ export function finishPayouts(room: Room) {
         let payout = 0;
 
         for (const bet of player.bets) {
-            if (bet.type === "mascot") {
-                const place = ordered.indexOf(bet.racer) + 1;
-                payout += payoutForPlace(place, bet.risk);
-            }
+            const place = ordered.indexOf(bet.racer) + 1;
+            payout += payoutForPlace(place, bet.risk);
         }
 
         player.money = Math.max(0, player.money + payout);
@@ -307,143 +296,252 @@ function createRaceDeck(playerCount: number): RaceCard[] {
     const cards: RaceCard[] = [];
 
     for (const racer of RACERS) {
-        cards.push(createCard("move", racer, 1));
+        const startingCard = CARD_CATALOG.find(
+            (card) => card.racer === racer && card.id === `${racer}_RECOVER_MOVE_1`
+        );
+
+        if (!startingCard) throw new Error(`Missing starting card for ${racer}`);
+
+        cards.push(createRaceCardFromDefinition(startingCard));
     }
+
+    const usedDefinitionIds = new Set(cards.map((card) => card.definitionId));
+
+    const remainingDefinitions = CARD_CATALOG.filter(
+        (definition) => !usedDefinitionIds.has(definition.id)
+    );
+
+    shuffle(remainingDefinitions);
 
     const count = randomCardsByPlayerCount[playerCount] ?? 8;
 
-    for (let i = 0; i < count; i++) {
-        cards.push(drawRandomCard());
-    }
+    cards.push(
+        ...remainingDefinitions
+            .slice(0, count)
+            .map((definition) => createRaceCardFromDefinition(definition))
+    );
 
     return cards;
 }
 
 function drawRandomCard(): RaceCard {
-    const racer = RACERS[Math.floor(Math.random() * RACERS.length)];
+    const definition =
+        CARD_CATALOG[Math.floor(Math.random() * CARD_CATALOG.length)];
 
-    const types: RaceCard["type"][] = [
-        "move",
-        "move",
-        "move",
-        "fall",
-        "turn",
-        "recover",
-        "swerve-left",
-        "swerve-right"
-    ];
-
-    const type = types[Math.floor(Math.random() * types.length)];
-
-    if (type === "move") {
-        const values = [-2, -1, 1, 2, 3];
-
-        return createCard(
-            type,
-            racer,
-            values[Math.floor(Math.random() * values.length)]
-        );
-    }
-
-    return createCard(type, racer, null);
+    return createRaceCardFromDefinition(definition);
 }
 
-function createCard(
-    type: RaceCard["type"],
-    racer: RacerName,
-    value: number | null
+function createRaceCardFromDefinition(
+    definition: RaceCardDefinition
 ): RaceCard {
     return {
         id: nanoid(8),
-        type,
-        racer,
-        value
+        definitionId: definition.id,
+        racer: definition.racer,
+        type: legacyCardType(definition),
+        value: legacyCardValue(definition)
     };
 }
 
+function legacyCardType(definition: RaceCardDefinition): CardType {
+    const lastAction = definition.actions[definition.actions.length - 1];
+
+    if (lastAction.type === "MOVE") return "move";
+    if (lastAction.type === "FALL_DOWN") return "fall";
+    if (lastAction.type === "RECOVER") return "recover";
+    if (lastAction.type === "TURN_AROUND") return "turn";
+    if (lastAction.type === "SWERVE_LEFT") return "swerve-left";
+    if (lastAction.type === "SWERVE_RIGHT") return "swerve-right";
+    if (lastAction.type === "MOVE_TO_STAR") return "move-to-star";
+
+    return "move";
+}
+
+function legacyCardValue(definition: RaceCardDefinition): number | null {
+    const moveAction = definition.actions.find((action) => action.type === "MOVE");
+    return moveAction?.type === "MOVE" ? moveAction.value : null;
+}
+
 function applyCard(room: Room, card: RaceCard) {
-    const racer = room.racers.find((r) => r.name === card.racer);
+    const definition = CARD_CATALOG.find((def) => def.id === card.definitionId);
+    if (!definition) return;
+
+    if (definition.green) {
+        applyGreenCard(room, definition);
+        return;
+    }
+
+    if (definition.racer === "GREEN") return;
+
+    const racer = room.racers.find((r) => r.name === definition.racer);
     if (!racer || racer.dq || racer.finished) return;
 
-    if (card.type === "fall") {
-        if (racer.fallen) {
-            dqRacer(room, racer, "knocked out while already fallen");
-        } else {
-            racer.fallen = true;
-            room.raceLog.push(`${racer.name} falls down.`);
+    for (const action of definition.actions) {
+        if (racer.dq || racer.finished) return;
+        executeAction(room, racer, action, definition);
+    }
+}
+
+function applyGreenCard(room: Room, definition: RaceCardDefinition) {
+    for (const action of definition.actions) {
+        for (const racer of room.racers) {
+            if (racer.dq || racer.finished) continue;
+            executeAction(room, racer, action, definition);
         }
-
-        return;
     }
 
-    if (card.type === "turn") {
-        racer.facing *= -1;
-        room.raceLog.push(`${racer.name} turns around.`);
-        return;
-    }
+    room.raceLog.push(`Green card: ${definition.name}.`);
+}
 
-    if (card.type === "recover") {
+function executeAction(
+    room: Room,
+    racer: RacerState,
+    action: CardAction,
+    definition: RaceCardDefinition
+) {
+    if (action.type === "RECOVER") {
         racer.fallen = false;
         racer.facing = 1;
         room.raceLog.push(`${racer.name} recovers.`);
         return;
     }
 
-    if (card.type === "swerve-left" || card.type === "swerve-right") {
-        const laneDelta = card.type === "swerve-left" ? -1 : 1;
-        racer.lane += laneDelta * racer.facing;
-
-        if (racer.lane < 0 || racer.lane > 3) {
-            dqRacer(room, racer, "swerved out of bounds");
-            return;
-        }
-
-        checkCollision(room, racer);
-        room.raceLog.push(`${racer.name} swerves.`);
+    if (action.type === "MOVE") {
+        moveRacer(room, racer, action.value, definition.canCollide, definition.canFinish);
         return;
     }
 
-    if (card.type === "move") {
-        const distance = racer.fallen ? Math.sign(card.value || 1) : card.value ?? 0;
+    if (action.type === "MOVE_TO_STAR") {
+        moveRacerToNextStar(room, racer, definition.canCollide, definition.canFinish);
+        return;
+    }
 
-        racer.position += distance * racer.facing;
+    if (action.type === "TURN_AROUND") {
+        racer.facing = racer.facing === 1 ? -1 : 1;
+        room.raceLog.push(`${racer.name} turns around.`);
+        return;
+    }
+
+    if (action.type === "FALL_DOWN") {
+        if (racer.fallen) {
+            dqRacer(room, racer, "knocked out while already fallen");
+        } else {
+            racer.fallen = true;
+            room.raceLog.push(`${racer.name} falls down.`);
+        }
+        return;
+    }
+
+    if (action.type === "SWERVE_LEFT") {
+        swerveRacer(room, racer, -1, definition.canCollide);
+        return;
+    }
+
+    if (action.type === "SWERVE_RIGHT") {
+        swerveRacer(room, racer, 1, definition.canCollide);
+    }
+}
+
+function moveRacer(
+    room: Room,
+    racer: RacerState,
+    value: number,
+    canCollide: boolean,
+    canFinish: boolean
+) {
+    const movementValue = racer.fallen ? Math.sign(value || 1) : value;
+    const direction = movementValue >= 0 ? racer.facing : -racer.facing;
+    const steps = Math.abs(movementValue);
+
+    for (let i = 0; i < steps; i++) {
+        racer.position += direction;
 
         if (racer.position < getVisibleStartPosition(room.shortenedBy)) {
             dqRacer(room, racer, "ran off the back of the track");
             return;
         }
 
-        if (racer.position >= BOARD.finishPosition) {
+        if (canFinish && racer.position >= BOARD.finishPosition) {
             finishRacer(room, racer);
             return;
         }
 
-        checkCollision(room, racer);
-        room.raceLog.push(`${racer.name} moves ${distance}.`);
+        if (!canFinish && racer.position >= BOARD.finishPosition) {
+            racer.position = BOARD.finishPosition;
+            return;
+        }
+
+        if (canCollide) {
+            checkCollision(room, racer);
+        }
+
+        if (racer.dq || racer.finished) return;
     }
+
+    room.raceLog.push(`${racer.name} moves ${value}.`);
+}
+
+function moveRacerToNextStar(
+    room: Room,
+    racer: RacerState,
+    canCollide: boolean,
+    canFinish: boolean
+) {
+    const sortedStars =
+        racer.facing === 1
+            ? [...BOARD.stars].sort((a, b) => a - b)
+            : [...BOARD.stars].sort((a, b) => b - a);
+
+    const nextStar = sortedStars.find((star) =>
+        racer.facing === 1 ? star > racer.position : star < racer.position
+    );
+
+    if (nextStar === undefined) {
+        room.raceLog.push(`${racer.name} has no star to move to.`);
+        return;
+    }
+
+    const distance = nextStar - racer.position;
+    moveRacer(room, racer, distance * racer.facing, canCollide, canFinish);
+}
+
+function swerveRacer(
+    room: Room,
+    racer: RacerState,
+    laneDelta: number,
+    canCollide: boolean
+) {
+    racer.lane += laneDelta * racer.facing;
+
+    if (racer.lane < 0 || racer.lane >= BOARD.laneCount) {
+        dqRacer(room, racer, "swerved out of bounds");
+        return;
+    }
+
+    if (canCollide) {
+        checkCollision(room, racer);
+    }
+
+    room.raceLog.push(`${racer.name} swerves.`);
 }
 
 function handleReshuffle(room: Room) {
     room.raceLog.push("Deck empty. Reshuffling discard pile.");
+
+    room.deck = [...room.discard];
+    room.discard = [];
+    shuffle(room.deck);
+    burnThreeCards(room);
 
     room.shortenedBy = Math.min(room.shortenedBy + 1, BOARD.foldLines.length);
 
     const visibleStartPosition = getVisibleStartPosition(room.shortenedBy);
 
     for (const racer of room.racers) {
-        if (
-            !racer.finished &&
-            !racer.dq &&
-            racer.position < visibleStartPosition
-        ) {
+        if (!racer.finished && !racer.dq && racer.position < visibleStartPosition) {
             dqRacer(room, racer, "was under the folded track");
         }
     }
-
-    room.deck = [...room.discard];
-    room.discard = [];
-    shuffle(room.deck);
-    burnThreeCards(room);
 
     room.raceLog.push(`Track shortened to fold line ${room.shortenedBy}.`);
 }
@@ -466,11 +564,7 @@ function checkCollision(room: Room, movingRacer: RacerState) {
             other.position === movingRacer.position
         ) {
             if (other.fallen) {
-                dqRacer(
-                    room,
-                    other,
-                    `collided with ${movingRacer.name} while fallen`
-                );
+                dqRacer(room, other, `collided with ${movingRacer.name} while fallen`);
             } else {
                 other.fallen = true;
                 room.raceLog.push(
