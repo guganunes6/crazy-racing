@@ -39,10 +39,6 @@ export function executeCardDefinition(
         return;
     }
 
-    room.raceLog.push(
-        `${definition.racer}: ${definition.name}.`
-    );
-
     for (const action of definition.actions) {
         if (racer.finished || racer.dq) {
             break;
@@ -65,9 +61,6 @@ function executeGreenCard(
     room: Room,
     definition: RaceCardDefinition
 ): void {
-    room.raceLog.push(
-        `GREEN: ${definition.name}.`
-    );
 
     /*
      * Each action affects every active mascot.

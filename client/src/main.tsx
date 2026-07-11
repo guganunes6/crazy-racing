@@ -231,9 +231,21 @@ function App() {
 
                     {room.phase === "racing" && (
                         <div>
-                            <Board racers={room.racers} shortenedBy={room.shortenedBy ?? 0} />
-                            <CurrentCard card={room.currentCard} />
-                            <button onClick={stepRace}>Flip Next Card</button>
+                            <div className="raceDeckStatus">
+                                Racing deck:{" "}
+                                <strong>{room.deckRemaining ?? 0} cards remaining</strong>
+                            </div>
+
+                            <Board
+                                racers={room.racers}
+                                shortenedBy={room.shortenedBy ?? 0}
+                            />
+
+                            <CurrentCard card={room.currentCardDisplay} />
+
+                            <button onClick={stepRace}>
+                                Flip Next Card
+                            </button>
                         </div>
                     )}
 
@@ -289,12 +301,29 @@ function App() {
     );
 }
 
-function CurrentCard({ card }: { card: any }) {
-    if (!card) return <p>No card flipped yet.</p>;
+type CurrentCardDisplay = {
+    owner: string;
+    name: string;
+    fullName: string;
+};
+
+function CurrentCard({
+    card
+}: {
+    card: CurrentCardDisplay | null;
+}) {
+    if (!card) {
+        return (
+            <div className="currentCard">
+                No card has been drawn yet.
+            </div>
+        );
+    }
 
     return (
         <div className="currentCard">
-            <strong>{card.racer}</strong> — {card.type} {card.value ?? ""}
+            <span>Last card drawn</span>
+            <strong>{card.fullName}</strong>
         </div>
     );
 }

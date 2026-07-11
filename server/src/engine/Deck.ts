@@ -96,7 +96,7 @@ export function burnThreeCards(room: Room): void {
     const burnedCards = room.deck.splice(0, 3);
     room.discard.push(...burnedCards);
 
-    room.raceLog.push(`${burnedCards.length} card(s) burned.`);
+    room.raceLog.push(`${burnedCards.length} card(s) discarded.`);
 }
 
 export function prepareDeckForRace(room: Room): void {

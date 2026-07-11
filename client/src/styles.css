@@ -154,3 +154,42 @@ input {
     overflow: auto;
     font-size: 14px;
 }
+
+.raceDeckStatus {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+}
+
+    .raceDeckStatus strong {
+        color: #facc15;
+    }
+
+.currentCard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 20px;
+    background: #0f172a;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+}
+
+    .currentCard span {
+        color: #94a3b8;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .currentCard strong {
+        color: #facc15;
+        font-size: 20px;
+    }

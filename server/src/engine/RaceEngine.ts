@@ -7,15 +7,9 @@ import {
     discardCard,
     drawTopCard
 } from "./Deck.js";
-import {
-    executeCardDefinition
-} from "./CardExecutor.js";
-import {
-    checkRaceEnd
-} from "./Podium.js";
-import {
-    reshuffleAndFold
-} from "./Reshuffle.js";
+import { executeCardDefinition } from "./CardExecutor.js";
+import { checkRaceEnd } from "./Podium.js";
+import { reshuffleAndFold } from "./Reshuffle.js";
 
 export class RaceEngine {
     constructor(private readonly room: Room) { }
@@ -36,32 +30,36 @@ export class RaceEngine {
         const card = drawTopCard(this.room);
 
         if (!card) {
-            this.room.raceLog.push(
-                "There are no cards available to draw."
-            );
-
             return undefined;
         }
 
         this.room.currentCard = card;
         discardCard(this.room, card);
 
-        const definition =
-            CARD_CATALOG_BY_ID[card.definitionId];
+        const definition = CARD_CATALOG_BY_ID[card.definitionId];
 
         if (!definition) {
             this.room.raceLog.push(
-                `Unknown card definition: ${card.definitionId}.`
+                `Unknown card drawn: ${card.definitionId}.`
             );
 
             return card;
         }
 
-        executeCardDefinition(
-            this.room,
-            definition
+        /*
+         * Every card draw gets one clear log entry using
+         * the card's complete catalogue name.
+         */
+        const cardOwner =
+            definition.racer === "GREEN"
+                ? "GREEN"
+                : definition.racer;
+
+        this.room.raceLog.push(
+            `CARD DRAWN — ${cardOwner}: ${definition.name}`
         );
 
+        executeCardDefinition(this.room, definition);
         checkRaceEnd(this.room);
 
         return card;

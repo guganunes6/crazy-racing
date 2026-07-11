@@ -16,6 +16,7 @@ import {
   stepRace,
   finishPayouts
 } from "./gameLogic.js";
+import { CARD_CATALOG_BY_ID } from "@crazy-racing/shared";
 
 const app = express();
 app.use(cors());
@@ -42,12 +43,32 @@ function getErrorMessage(error: unknown) {
 }
 
 function publicRoom(room: Room) {
+    const currentCardDefinition = room.currentCard
+        ? CARD_CATALOG_BY_ID[room.currentCard.definitionId]
+        : undefined;
+
     return {
         roomCode: room.roomCode,
         hostSocketId: room.hostSocketId,
         phase: room.phase,
         raceNumber: room.raceNumber,
         shortenedBy: room.shortenedBy,
+
+        deckRemaining: room.deck.length,
+
+        currentCard: room.currentCard,
+
+        currentCardDisplay: currentCardDefinition
+            ? {
+                owner: currentCardDefinition.racer,
+                name: currentCardDefinition.name,
+                fullName:
+                    currentCardDefinition.racer === "GREEN"
+                        ? `GREEN: ${currentCardDefinition.name}`
+                        : `${currentCardDefinition.racer}: ${currentCardDefinition.name}`
+            }
+            : null,
+
         players: room.players.map((p) => ({
             id: p.id,
             name: p.name,
@@ -56,10 +77,10 @@ function publicRoom(room: Room) {
             handCount: p.hand.length,
             bets: p.bets
         })),
+
         racers: room.racers,
         podium: room.podium,
-        raceLog: room.raceLog.slice(-10),
-        currentCard: room.currentCard
+        raceLog: room.raceLog,
     };
 }
 
