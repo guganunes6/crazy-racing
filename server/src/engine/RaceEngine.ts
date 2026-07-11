@@ -7,9 +7,12 @@ import {
     discardCard,
     drawTopCard
 } from "./Deck.js";
-import { executeCardDefinition } from "./CardExecutor.js";
-import { checkRaceEnd } from "./Podium.js";
-import { reshuffleAndFold } from "./Reshuffle.js";
+import {
+    executeCardDefinition
+} from "./CardExecutor.js";
+import {
+    checkRaceEnd
+} from "./Podium.js";
 
 export class RaceEngine {
     constructor(private readonly room: Room) { }
@@ -20,23 +23,22 @@ export class RaceEngine {
         }
 
         if (this.room.deck.length === 0) {
-            reshuffleAndFold(this.room);
-
-            if (this.room.phase !== "racing") {
-                return undefined;
-            }
+            this.room.phase = "reshuffle-required";
+            return undefined;
         }
 
         const card = drawTopCard(this.room);
 
         if (!card) {
+            this.room.phase = "reshuffle-required";
             return undefined;
         }
 
         this.room.currentCard = card;
         discardCard(this.room, card);
 
-        const definition = CARD_CATALOG_BY_ID[card.definitionId];
+        const definition =
+            CARD_CATALOG_BY_ID[card.definitionId];
 
         if (!definition) {
             this.room.raceLog.push(
@@ -46,21 +48,28 @@ export class RaceEngine {
             return card;
         }
 
-        /*
-         * Every card draw gets one clear log entry using
-         * the card's complete catalogue name.
-         */
-        const cardOwner =
+        const owner =
             definition.racer === "GREEN"
                 ? "GREEN"
                 : definition.racer;
 
         this.room.raceLog.push(
-            `CARD DRAWN — ${cardOwner}: ${definition.name}`
+            `CARD DRAWN — ${owner}: ${definition.name}`
         );
 
-        executeCardDefinition(this.room, definition);
+        executeCardDefinition(
+            this.room,
+            definition
+        );
+
         checkRaceEnd(this.room);
+
+        if (
+            this.room.phase === "racing" &&
+            this.room.deck.length === 0
+        ) {
+            this.room.phase = "reshuffle-required";
+        }
 
         return card;
     }

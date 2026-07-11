@@ -1,0 +1,68 @@
+.draftedTicketIcon {
+    position: relative;
+    width: 58px;
+    min-height: 72px;
+    display: grid;
+    place-items: center;
+    gap: 1px;
+    padding: 4px;
+    border: 2px solid #475569;
+    border-radius: 9px;
+    color: white;
+    font-size: 9px;
+    text-transform: uppercase;
+}
+
+    .draftedTicketIcon img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+    }
+
+    .draftedTicketIcon span,
+    .draftedTicketIcon strong {
+        font-size: 8px;
+    }
+
+    .draftedTicketIcon b {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        display: grid;
+        place-items: center;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #facc15;
+        color: #111827;
+        font-size: 12px;
+    }
+
+.draftedTicketLION {
+    background: #3b185f;
+}
+
+.draftedTicketHOTDOG {
+    background: #9a3412;
+}
+
+.draftedTicketFISH {
+    background: #075985;
+}
+
+.draftedTicketQUEEN {
+    background: #881337;
+}
+
+.draftedTicketAnswerYES {
+    background: #15803d;
+}
+
+.draftedTicketAnswerNO {
+    background: #b91c1c;
+}
+
+.draftedTicketAnswer {
+    font-size: 13px;
+    font-weight: 900;
+}

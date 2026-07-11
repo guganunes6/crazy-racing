@@ -15,3 +15,7 @@ export * from "./cards/CardCatalog";
 export * from "./cards/BettingTickets";
 
 export * from "./cards/SideBets";
+
+export * from "./types/Betting";
+
+export * from "./types/PublicGameState";

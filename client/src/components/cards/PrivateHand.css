@@ -1,0 +1,11 @@
+.privateHand {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.privateHandGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}

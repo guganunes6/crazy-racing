@@ -24,13 +24,13 @@ export function createInitialRaceDeck(playerCount: number): RaceCard[] {
 
     /*
      * These remain the four guaranteed starting cards.
-     * We are currently using Recover then Move 1 for each mascot.
+     * We are currently using Recover then Move 2 for each mascot.
      */
     for (const racer of RACERS) {
         const startingDefinition = CARD_CATALOG.find(
             (definition) =>
                 definition.racer === racer &&
-                definition.id === `${racer}_RECOVER_MOVE_1`
+                definition.id === `${racer}_RECOVER_MOVE_2`
         );
 
         if (!startingDefinition) {

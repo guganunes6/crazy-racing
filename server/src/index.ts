@@ -3,25 +3,37 @@ import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import {
-  createRoom,
-  addPlayer,
-  removePlayer,
-  toggleReady,
-  canStart,
-  startGame,
-  autoAssignDemoBets,
-  submitSecretCards,
-  allSecretCardsSubmitted,
-  beginRace,
-  stepRace,
-  finishPayouts
+    CARD_CATALOG_BY_ID,
+    type BetRiskSide,
+    type TicketStackKey
+} from "@crazy-racing/shared";
+import {
+    createRoom,
+    addPlayer,
+    removePlayer,
+    toggleReady,
+    canStart,
+    startGame,
+    submitSecretCards,
+    beginRace,
+    stepRace,
+    reshuffleRace,
+    finishPayouts,
+    type Room
 } from "./gameLogic.js";
-import { CARD_CATALOG_BY_ID } from "@crazy-racing/shared";
+import {
+    confirmDoubledTicket,
+    confirmTicketDraft
+} from "./betting/BettingDraft.js";
+import {
+    getAvailableTickets as getServerAvailableTickets
+} from "./betting/TicketStacks.js";
 
 const app = express();
 app.use(cors());
 
-const httpServer = createServer(app);
+const httpServer =
+    createServer(app);
 
 const io = new Server(httpServer, {
     cors: {
@@ -30,180 +42,550 @@ const io = new Server(httpServer, {
     }
 });
 
-type Room = ReturnType<typeof createRoom>;
+const rooms =
+    new Map<string, Room>();
 
-const rooms = new Map<string, Room>();
+app.get(
+    "/health",
+    (_req, res) => {
+        res.json({ ok: true });
+    }
+);
 
-app.get("/health", (_req, res) => {
-    res.json({ ok: true });
-});
-
-function getErrorMessage(error: unknown) {
-    return error instanceof Error ? error.message : "Unknown error";
+function getErrorMessage(
+    error: unknown
+): string {
+    return error instanceof Error
+        ? error.message
+        : "Unknown error";
 }
 
 function publicRoom(room: Room) {
-    const currentCardDefinition = room.currentCard
-        ? CARD_CATALOG_BY_ID[room.currentCard.definitionId]
-        : undefined;
+    const currentDefinition =
+        room.currentCard
+            ? CARD_CATALOG_BY_ID[
+            room.currentCard
+                .definitionId
+            ]
+            : undefined;
 
     return {
         roomCode: room.roomCode,
-        hostSocketId: room.hostSocketId,
+        hostSocketId:
+            room.hostSocketId,
         phase: room.phase,
-        raceNumber: room.raceNumber,
-        shortenedBy: room.shortenedBy,
+        raceNumber:
+            room.raceNumber,
+        shortenedBy:
+            room.shortenedBy,
 
-        deckRemaining: room.deck.length,
+        deckRemaining:
+            room.deck.length,
 
-        currentCard: room.currentCard,
+        publicRaceDeckDefinitionIds:
+            room.publicRaceDeckDefinitionIds,
 
-        currentCardDisplay: currentCardDefinition
-            ? {
-                owner: currentCardDefinition.racer,
-                name: currentCardDefinition.name,
-                fullName:
-                    currentCardDefinition.racer === "GREEN"
-                        ? `GREEN: ${currentCardDefinition.name}`
-                        : `${currentCardDefinition.racer}: ${currentCardDefinition.name}`
-            }
-            : null,
+        currentCard:
+            room.currentCard,
 
-        players: room.players.map((p) => ({
-            id: p.id,
-            name: p.name,
-            ready: p.ready,
-            money: p.money,
-            handCount: p.hand.length,
-            bets: p.bets
-        })),
+        currentCardDisplay:
+            currentDefinition
+                ? {
+                    owner:
+                        currentDefinition.racer,
+                    name:
+                        currentDefinition.name,
+                    fullName:
+                        currentDefinition.racer ===
+                            "GREEN"
+                            ? `GREEN: ${currentDefinition.name}`
+                            : `${currentDefinition.racer}: ${currentDefinition.name}`
+                }
+                : null,
+
+        currentSideBet:
+            room.currentSideBet,
+
+        availableTickets:
+            getServerAvailableTickets(
+                room.ticketStacks
+            ),
+
+        bettingDraft:
+            room.bettingDraft,
+
+        players: room.players.map(
+            (player) => ({
+                id: player.id,
+                name: player.name,
+                ready: player.ready,
+                money: player.money,
+                handCount:
+                    player.hand.length,
+                draftedTickets:
+                    player.draftedTickets,
+                doubledTicketId:
+                    player.doubledTicketId,
+                secretCardsSubmitted:
+                    player.selectedSecretCards
+                        .length > 0
+            })
+        ),
 
         racers: room.racers,
         podium: room.podium,
-        raceLog: room.raceLog,
+        raceLog: room.raceLog
     };
 }
 
-function emitRoom(room: Room) {
-  io.to(room.roomCode).emit("room:update", publicRoom(room));
+function emitRoom(
+    room: Room
+): void {
+    io.to(room.roomCode).emit(
+        "room:update",
+        publicRoom(room)
+    );
 
-  for (const player of room.players) {
-    io.to(player.id).emit("player:private", {
-      hand: player.hand,
-      selectedSecretCards: player.selectedSecretCards
-    });
-  }
+    for (const player of room.players) {
+        io.to(player.id).emit(
+            "player:private",
+            {
+                hand: player.hand,
+                selectedSecretCards:
+                    player.selectedSecretCards
+            }
+        );
+    }
 }
 
 io.on("connection", (socket) => {
-  socket.on("room:create", ({ playerName }, callback) => {
-    try {
-      const room = createRoom(socket.id, playerName);
-      rooms.set(room.roomCode, room);
-      socket.join(room.roomCode);
-      callback({ ok: true, roomCode: room.roomCode });
-      emitRoom(room);
-    } catch (error) {
-        callback({ ok: false, error: getErrorMessage(error) });
-    }
-  });
+    socket.on(
+        "room:create",
+        ({ playerName }, callback) => {
+            try {
+                const room = createRoom(
+                    socket.id,
+                    playerName
+                );
 
-  socket.on("room:join", ({ roomCode, playerName }, callback) => {
-    try {
-      const room = rooms.get(String(roomCode).toUpperCase());
-      if (!room) throw new Error("Room not found.");
+                rooms.set(
+                    room.roomCode,
+                    room
+                );
 
-      addPlayer(room, socket.id, playerName);
-      socket.join(room.roomCode);
-      callback({ ok: true, roomCode: room.roomCode });
-      emitRoom(room);
-    } catch (error) {
-        callback({ ok: false, error: getErrorMessage(error) });
-    }
-  });
+                socket.join(
+                    room.roomCode
+                );
 
-  socket.on("player:ready", ({ roomCode }) => {
-    const room = rooms.get(roomCode);
-    if (!room) return;
+                callback({
+                    ok: true,
+                    roomCode:
+                        room.roomCode
+                });
 
-    toggleReady(room, socket.id);
-    emitRoom(room);
-  });
+                emitRoom(room);
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
 
-  socket.on("game:start", ({ roomCode }, callback) => {
-    try {
-      const room = rooms.get(roomCode);
-      if (!room) throw new Error("Room not found.");
-      if (room.hostSocketId !== socket.id) throw new Error("Only host can start.");
-      if (!canStart(room)) throw new Error("Need 2–9 ready players.");
+    socket.on(
+        "room:join",
+        (
+            {
+                roomCode,
+                playerName
+            },
+            callback
+        ) => {
+            try {
+                const room = rooms.get(
+                    String(roomCode)
+                        .toUpperCase()
+                );
 
-      startGame(room);
-      emitRoom(room);
-      callback({ ok: true });
-    } catch (error) {
-        callback({ ok: false, error: getErrorMessage(error) });
-    }
-  });
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
 
-  socket.on("betting:auto-demo", ({ roomCode }) => {
-    const room = rooms.get(roomCode);
-    if (!room || room.phase !== "betting") return;
+                addPlayer(
+                    room,
+                    socket.id,
+                    playerName
+                );
 
-    autoAssignDemoBets(room);
-    emitRoom(room);
-  });
+                socket.join(
+                    room.roomCode
+                );
 
-  socket.on("secret:submit", ({ roomCode, cardIds }, callback) => {
-    try {
-      const room = rooms.get(roomCode);
-      if (!room || room.phase !== "secret-card") throw new Error("Not secret card phase.");
+                callback({
+                    ok: true,
+                    roomCode:
+                        room.roomCode
+                });
 
-      submitSecretCards(room, socket.id, cardIds);
+                emitRoom(room);
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
 
-      if (allSecretCardsSubmitted(room)) {
-        beginRace(room);
-      }
+    socket.on(
+        "player:ready",
+        ({ roomCode }) => {
+            const room =
+                rooms.get(roomCode);
 
-      emitRoom(room);
-      callback({ ok: true });
-    } catch (error) {
-        callback({ ok: false, error: getErrorMessage(error) });
-    }
-  });
+            if (!room) return;
 
-  socket.on("race:step", ({ roomCode }) => {
-    const room = rooms.get(roomCode);
-    if (!room || room.phase !== "racing") return;
+            toggleReady(
+                room,
+                socket.id
+            );
 
-    stepRace(room);
-    emitRoom(room);
-  });
+            emitRoom(room);
+        }
+    );
 
-  socket.on("payouts:continue", ({ roomCode }) => {
-    const room = rooms.get(roomCode);
-    if (!room || room.phase !== "payouts") return;
+    socket.on(
+        "game:start",
+        ({ roomCode }, callback) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
 
-    finishPayouts(room);
-    emitRoom(room);
-  });
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
 
-  socket.on("disconnect", () => {
-    for (const [roomCode, room] of rooms) {
-      const wasInRoom = room.players.some((p) => p.id === socket.id);
-      if (!wasInRoom) continue;
+                if (
+                    room.hostSocketId !==
+                    socket.id
+                ) {
+                    throw new Error(
+                        "Only the host can start the game."
+                    );
+                }
 
-      removePlayer(room, socket.id);
+                if (!canStart(room)) {
+                    throw new Error(
+                        "Need 2–9 ready players."
+                    );
+                }
 
-      if (room.players.length === 0) {
-        rooms.delete(roomCode);
-      } else {
-        emitRoom(room);
-      }
-    }
-  });
+                startGame(room);
+                emitRoom(room);
+
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "betting:confirm",
+        (
+            {
+                roomCode,
+                stack,
+                risk
+            }: {
+                roomCode: string;
+                stack: TicketStackKey;
+                risk: BetRiskSide;
+            },
+            callback
+        ) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
+
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
+
+                confirmTicketDraft(
+                    room,
+                    socket.id,
+                    stack,
+                    risk
+                );
+
+                emitRoom(room);
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "betting:double",
+        (
+            {
+                roomCode,
+                ticketId
+            },
+            callback
+        ) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
+
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
+
+                confirmDoubledTicket(
+                    room,
+                    socket.id,
+                    ticketId
+                );
+
+                emitRoom(room);
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "secret:submit",
+        (
+            {
+                roomCode,
+                cardIds
+            },
+            callback
+        ) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
+
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
+
+                submitSecretCards(
+                    room,
+                    socket.id,
+                    cardIds
+                );
+
+                emitRoom(room);
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "race:start",
+        ({ roomCode }, callback) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
+
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
+
+                if (
+                    room.hostSocketId !==
+                    socket.id
+                ) {
+                    throw new Error(
+                        "Only the host can start the race."
+                    );
+                }
+
+                beginRace(room);
+                emitRoom(room);
+
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "race:step",
+        ({ roomCode }, callback) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
+
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
+
+                if (
+                    room.hostSocketId !==
+                    socket.id
+                ) {
+                    throw new Error(
+                        "Only the host can flip cards."
+                    );
+                }
+
+                stepRace(room);
+                emitRoom(room);
+
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "race:reshuffle",
+        ({ roomCode }, callback) => {
+            try {
+                const room =
+                    rooms.get(roomCode);
+
+                if (!room) {
+                    throw new Error(
+                        "Room not found."
+                    );
+                }
+
+                if (
+                    room.hostSocketId !==
+                    socket.id
+                ) {
+                    throw new Error(
+                        "Only the host can reshuffle the race deck."
+                    );
+                }
+
+                reshuffleRace(room);
+                emitRoom(room);
+
+                callback({ ok: true });
+            } catch (error) {
+                callback({
+                    ok: false,
+                    error:
+                        getErrorMessage(error)
+                });
+            }
+        }
+    );
+
+    socket.on(
+        "payouts:continue",
+        ({ roomCode }) => {
+            const room =
+                rooms.get(roomCode);
+
+            if (!room) return;
+
+            if (
+                room.hostSocketId !==
+                socket.id
+            ) {
+                return;
+            }
+
+            finishPayouts(room);
+            emitRoom(room);
+        }
+    );
+
+    socket.on("disconnect", () => {
+        for (
+            const [roomCode, room]
+            of rooms
+        ) {
+            const wasInRoom =
+                room.players.some(
+                    (player) =>
+                        player.id ===
+                        socket.id
+                );
+
+            if (!wasInRoom) {
+                continue;
+            }
+
+            removePlayer(
+                room,
+                socket.id
+            );
+
+            if (
+                room.players.length === 0
+            ) {
+                rooms.delete(roomCode);
+            } else {
+                emitRoom(room);
+            }
+        }
+    });
 });
 
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`CRAZY RACING server running on http://localhost:${PORT}`);
-});
+const PORT =
+    process.env.PORT || 3001;
+
+httpServer.listen(
+    PORT,
+    () => {
+        console.log(
+            `CRAZY RACING server running on http://localhost:${PORT}`
+        );
+    }
+);

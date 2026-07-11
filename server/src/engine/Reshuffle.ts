@@ -3,54 +3,63 @@ import {
     visibleStart
 } from "@crazy-racing/shared";
 import type { Room } from "../gameLogic.js";
-import { rebuildDeckFromDiscard } from "./Deck.js";
+import {
+    rebuildDeckFromDiscard
+} from "./Deck.js";
 import {
     checkRaceEnd,
     disqualifyRacersTogether
 } from "./Podium.js";
 
-export function reshuffleAndFold(room: Room): void {
+export function reshuffleRaceDeck(
+    room: Room
+): void {
+    if (room.phase !== "reshuffle-required") {
+        throw new Error(
+            "The racing deck does not need reshuffling."
+        );
+    }
+
     room.raceLog.push(
-        "The racing deck is empty. Reshuffling."
+        "The racing deck is reshuffled."
     );
 
-    /*
-     * Order required by the rules:
-     * 1. Shuffle the discard pile.
-     * 2. Burn three cards.
-     * 3. Fold the track.
-     * 4. DQ racers behind the new fold line.
-     */
     rebuildDeckFromDiscard(room);
 
-    room.shortenedBy = Math.min(
-        room.shortenedBy + 1,
+    if (
+        room.shortenedBy <
         BOARD.foldLines.length
-    );
+    ) {
+        room.shortenedBy += 1;
 
-    const newTrackStart = visibleStart(room.shortenedBy);
+        const newTrackStart = visibleStart(
+            room.shortenedBy
+        );
 
-    room.raceLog.push(
-        `The track folds to level ${room.shortenedBy}.`
-    );
+        room.raceLog.push(
+            `The racing field folds to level ${room.shortenedBy}.`
+        );
 
-    const racersUnderFold = room.racers
-        .filter(
-            (racer) =>
-                !racer.finished &&
-                !racer.dq &&
-                racer.position < newTrackStart
-        )
-        .map((racer) => ({
-            racer,
-            reason: "was underneath the folded section of the track"
-        }));
+        const racersUnderFold = room.racers
+            .filter(
+                (racer) =>
+                    !racer.finished &&
+                    !racer.dq &&
+                    racer.position < newTrackStart
+            )
+            .map((racer) => ({
+                racer,
+                reason:
+                    "was underneath the folded section of the track"
+            }));
 
-    /*
-     * All racers caught by the same fold are disqualified
-     * simultaneously and therefore share a podium place.
-     */
-    disqualifyRacersTogether(room, racersUnderFold);
+        disqualifyRacersTogether(
+            room,
+            racersUnderFold
+        );
+    }
 
-    checkRaceEnd(room);
+    if (!checkRaceEnd(room)) {
+        room.phase = "racing";
+    }
 }

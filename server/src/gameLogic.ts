@@ -1,15 +1,20 @@
 import {
     BOARD,
     RACERS,
+    SIDE_BETS,
     STARTING_MONEY,
     MAX_PLAYERS,
     MIN_PLAYERS,
     SECRET_CARDS_TWO_PLAYERS,
     SECRET_CARDS_OTHER,
+    type BettingDraftState,
+    type DraftedBetTicket,
+    type PodiumEntry,
+    type RaceCard,
     type RacerName,
     type RacerState,
-    type PodiumEntry,
-    type RaceCard
+    type SideBetDefinition,
+    type TicketStackState
 } from "@crazy-racing/shared";
 import { nanoid } from "nanoid";
 import {
@@ -18,20 +23,26 @@ import {
     prepareDeckForRace
 } from "./engine/Deck.js";
 import { RaceEngine } from "./engine/RaceEngine.js";
+import {
+    reshuffleRaceDeck
+} from "./engine/Reshuffle.js";
+import {
+    startBettingDraft
+} from "./betting/BettingDraft.js";
+import {
+    createTicketStacks
+} from "./betting/TicketStacks.js";
 
 export type GamePhase =
     | "lobby"
     | "betting"
+    | "double-bet"
     | "secret-card"
+    | "ready-to-race"
     | "racing"
+    | "reshuffle-required"
     | "payouts"
     | "final";
-
-export type PlayerBet = {
-    type: "mascot";
-    racer: RacerName;
-    risk: "safe" | "risky";
-};
 
 export type Player = {
     id: string;
@@ -40,7 +51,9 @@ export type Player = {
     money: number;
     hand: RaceCard[];
     selectedSecretCards: RaceCard[];
-    bets: PlayerBet[];
+
+    draftedTickets: DraftedBetTicket[];
+    doubledTicketId: string | null;
 };
 
 export type Room = {
@@ -49,13 +62,23 @@ export type Room = {
     phase: GamePhase;
     raceNumber: number;
     shortenedBy: number;
+
     players: Player[];
     racers: RacerState[];
     podium: PodiumEntry[];
+
     raceLog: string[];
     currentCard: RaceCard | null;
     deck: RaceCard[];
     discard: RaceCard[];
+
+    publicRaceDeckDefinitionIds: string[];
+
+    currentSideBet: SideBetDefinition;
+    ticketStacks: TicketStackState[];
+    bettingDraft: BettingDraftState;
+    draftStartingPlayerIndex: number;
+
     createdAt: number;
 };
 
@@ -69,18 +92,38 @@ export function createRoom(
         phase: "lobby",
         raceNumber: 1,
         shortenedBy: 0,
+
         players: [
             createPlayer(
                 hostSocketId,
                 hostName || "Host"
             )
         ],
+
         racers: createInitialRacers(),
         podium: [],
+
         raceLog: [],
         currentCard: null,
         deck: [],
         discard: [],
+
+        publicRaceDeckDefinitionIds: [],
+
+        currentSideBet: SIDE_BETS[0],
+        ticketStacks: createTicketStacks(),
+
+        bettingDraft: {
+            order: [],
+            turnIndex: 0,
+            currentPlayerId: null,
+            picksPerPlayer: 2,
+            startingPlayerIndex: 0,
+            completed: false
+        },
+
+        draftStartingPlayerIndex: 0,
+
         createdAt: Date.now()
     };
 }
@@ -95,13 +138,16 @@ export function addPlayer(
     }
 
     if (room.phase !== "lobby") {
-        throw new Error("Game already started.");
+        throw new Error(
+            "The game has already started."
+        );
     }
 
     room.players.push(
         createPlayer(
             socketId,
-            name || `Player ${room.players.length + 1}`
+            name ||
+            `Player ${room.players.length + 1}`
         )
     );
 }
@@ -118,7 +164,8 @@ export function removePlayer(
         room.hostSocketId === socketId &&
         room.players.length > 0
     ) {
-        room.hostSocketId = room.players[0].id;
+        room.hostSocketId =
+            room.players[0].id;
     }
 }
 
@@ -127,7 +174,8 @@ export function toggleReady(
     socketId: string
 ): void {
     const player = room.players.find(
-        (candidate) => candidate.id === socketId
+        (candidate) =>
+            candidate.id === socketId
     );
 
     if (player) {
@@ -135,70 +183,98 @@ export function toggleReady(
     }
 }
 
-export function canStart(room: Room): boolean {
+export function canStart(
+    room: Room
+): boolean {
     return (
         room.players.length >= MIN_PLAYERS &&
         room.players.length <= MAX_PLAYERS &&
-        room.players.every((player) => player.ready)
+        room.players.every(
+            (player) => player.ready
+        )
     );
 }
 
-export function startGame(room: Room): void {
+export function startGame(
+    room: Room
+): void {
     if (!canStart(room)) {
-        throw new Error("Need 2–9 ready players.");
+        throw new Error(
+            "Need 2–9 ready players."
+        );
     }
 
-    room.phase = "betting";
     room.raceNumber = 1;
+
+    room.draftStartingPlayerIndex =
+        Math.floor(
+            Math.random() *
+            room.players.length
+        );
 
     for (const player of room.players) {
         player.money = STARTING_MONEY;
         player.hand = [];
-        player.bets = [];
+        player.draftedTickets = [];
+        player.doubledTicketId = null;
         player.selectedSecretCards = [];
     }
 
     setupRace(room);
 }
 
-export function setupRace(room: Room): void {
+export function setupRace(
+    room: Room
+): void {
     room.shortenedBy = 0;
     room.racers = createInitialRacers();
     room.podium = [];
     room.raceLog = [];
     room.currentCard = null;
     room.discard = [];
+
     room.deck = createInitialRaceDeck(
         room.players.length
     );
 
+    room.publicRaceDeckDefinitionIds =
+        room.deck.map(
+            (card) => card.definitionId
+        );
+
+    room.currentSideBet =
+        SIDE_BETS[
+        (room.raceNumber - 1) %
+        SIDE_BETS.length
+        ];
+
+    room.ticketStacks =
+        createTicketStacks();
+
     const handSize =
-        room.players.length === 2 ? 4 : 3;
+        room.players.length === 2
+            ? 4
+            : 3;
 
     for (const player of room.players) {
-        while (player.hand.length < handSize) {
-            player.hand.push(drawCatalogCard());
+        while (
+            player.hand.length <
+            handSize
+        ) {
+            player.hand.push(
+                drawCatalogCard()
+            );
         }
 
         player.selectedSecretCards = [];
-        player.bets = [];
+        player.draftedTickets = [];
+        player.doubledTicketId = null;
     }
-}
 
-export function autoAssignDemoBets(
-    room: Room
-): void {
-    room.players.forEach((player, index) => {
-        player.bets = [
-            {
-                type: "mascot",
-                racer: RACERS[index % RACERS.length],
-                risk: "safe"
-            }
-        ];
-    });
-
-    room.phase = "secret-card";
+    startBettingDraft(
+        room,
+        room.draftStartingPlayerIndex
+    );
 }
 
 export function submitSecretCards(
@@ -206,12 +282,21 @@ export function submitSecretCards(
     socketId: string,
     cardIds: string[]
 ): void {
+    if (room.phase !== "secret-card") {
+        throw new Error(
+            "Secret-card selection is not active."
+        );
+    }
+
     const player = room.players.find(
-        (candidate) => candidate.id === socketId
+        (candidate) =>
+            candidate.id === socketId
     );
 
     if (!player) {
-        throw new Error("Player not found.");
+        throw new Error(
+            "Player not found."
+        );
     }
 
     const requiredCards =
@@ -219,17 +304,33 @@ export function submitSecretCards(
             ? SECRET_CARDS_TWO_PLAYERS
             : SECRET_CARDS_OTHER;
 
-    const selectedCards = player.hand
-        .filter((card) => cardIds.includes(card.id))
-        .slice(0, requiredCards);
+    const uniqueCardIds =
+        new Set(cardIds);
 
-    if (selectedCards.length !== requiredCards) {
+    const selectedCards =
+        player.hand.filter(
+            (card) =>
+                uniqueCardIds.has(card.id)
+        );
+
+    if (
+        selectedCards.length !==
+        requiredCards
+    ) {
         throw new Error(
             `Choose exactly ${requiredCards} card(s).`
         );
     }
 
-    player.selectedSecretCards = selectedCards;
+    player.selectedSecretCards =
+        selectedCards;
+
+    if (
+        allSecretCardsSubmitted(room)
+    ) {
+        room.phase =
+            "ready-to-race";
+    }
 }
 
 export function allSecretCardsSubmitted(
@@ -242,24 +343,40 @@ export function allSecretCardsSubmitted(
 
     return room.players.every(
         (player) =>
-            player.selectedSecretCards.length ===
-            requiredCards
+            player.selectedSecretCards
+                .length === requiredCards
     );
 }
 
-export function beginRace(room: Room): void {
+export function beginRace(
+    room: Room
+): void {
+    if (
+        room.phase !==
+        "ready-to-race"
+    ) {
+        throw new Error(
+            "Not every player has submitted their secret cards."
+        );
+    }
+
     for (const player of room.players) {
-        room.deck.push(...player.selectedSecretCards);
-
-        const selectedCardIds = new Set(
-            player.selectedSecretCards.map(
-                (card) => card.id
-            )
+        room.deck.push(
+            ...player.selectedSecretCards
         );
 
-        player.hand = player.hand.filter(
-            (card) => !selectedCardIds.has(card.id)
-        );
+        const selectedIds =
+            new Set(
+                player.selectedSecretCards.map(
+                    (card) => card.id
+                )
+            );
+
+        player.hand =
+            player.hand.filter(
+                (card) =>
+                    !selectedIds.has(card.id)
+            );
 
         player.selectedSecretCards = [];
     }
@@ -271,37 +388,28 @@ export function beginRace(room: Room): void {
 export function stepRace(
     room: Room
 ): RaceCard | undefined {
-    const engine = new RaceEngine(room);
+    const engine =
+        new RaceEngine(room);
+
     return engine.playNextCard();
 }
 
-export function finishPayouts(room: Room): void {
-    const orderedRacers = [...room.podium]
-        .sort(
-            (first, second) =>
-                (first.place ?? 999) -
-                (second.place ?? 999)
-        )
-        .map((entry) => entry.racer);
+export function reshuffleRace(
+    room: Room
+): void {
+    reshuffleRaceDeck(room);
+}
 
-    for (const player of room.players) {
-        let payout = 0;
-
-        for (const bet of player.bets) {
-            const place =
-                orderedRacers.indexOf(bet.racer) + 1;
-
-            payout += payoutForPlace(
-                place,
-                bet.risk
-            );
-        }
-
-        player.money = Math.max(
-            0,
-            player.money + payout
-        );
-    }
+export function finishPayouts(
+    room: Room
+): void {
+    /*
+     * Full side-bet evaluation will use the
+     * race-event tracker added in the next step.
+     *
+     * Mascot ticket payouts can already be
+     * processed here later from draftedTickets.
+     */
 
     if (room.raceNumber >= 3) {
         room.phase = "final";
@@ -309,10 +417,15 @@ export function finishPayouts(room: Room): void {
     }
 
     room.raceNumber += 1;
-    room.phase = "betting";
+
+    room.draftStartingPlayerIndex =
+        (room.draftStartingPlayerIndex + 1) %
+        room.players.length;
 
     for (const player of room.players) {
-        player.hand.push(drawCatalogCard());
+        player.hand.push(
+            drawCatalogCard()
+        );
     }
 
     setupRace(room);
@@ -329,37 +442,23 @@ function createPlayer(
         money: STARTING_MONEY,
         hand: [],
         selectedSecretCards: [],
-        bets: []
+        draftedTickets: [],
+        doubledTicketId: null
     };
 }
 
-function createInitialRacers(): RacerState[] {
-    return RACERS.map((name, lane) => ({
-        name,
-        lane,
-        position: BOARD.startPosition,
-        facing: 1,
-        fallen: false,
-        dq: false,
-        finished: false
-    }));
-}
-
-function payoutForPlace(
-    place: number,
-    risk: "safe" | "risky"
-): number {
-    if (place === 1) {
-        return risk === "risky" ? 15 : 10;
-    }
-
-    if (place === 2) {
-        return risk === "risky" ? 5 : 7;
-    }
-
-    if (place === 3) {
-        return risk === "risky" ? 2 : 5;
-    }
-
-    return 0;
+function createInitialRacers():
+    RacerState[] {
+    return RACERS.map(
+        (name, lane) => ({
+            name,
+            lane,
+            position:
+                BOARD.startPosition,
+            facing: 1,
+            fallen: false,
+            dq: false,
+            finished: false
+        })
+    );
 }
