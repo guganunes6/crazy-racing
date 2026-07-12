@@ -9,9 +9,10 @@ import { Lane } from "./Lane";
 type BoardProps = {
     racers: RacerOnBoard[];
     shortenedBy?: number;
+    remainingCards: number;
 };
 
-export function Board({ racers, shortenedBy = 0 }: BoardProps) {
+export function Board({ racers, shortenedBy = 0, remainingCards }: BoardProps) {
     const visibleStartPosition = getVisibleStartPosition(shortenedBy);
 
     return (
@@ -19,7 +20,9 @@ export function Board({ racers, shortenedBy = 0 }: BoardProps) {
             <div className="boardFrame">
                 <div className="boardTitle">
                     <span>CRAZY RACING TRACK</span>
-                    <span>Fold level: {shortenedBy}</span>
+                    <span className="boardDeckCounter">
+                        Racing deck: {remainingCards} cards remaining
+                    </span>
                 </div>
 
                 <div className="trackMat">

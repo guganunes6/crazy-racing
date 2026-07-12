@@ -4,8 +4,79 @@
     gap: 12px;
 }
 
-.publicRaceDeckGrid {
+.publicRaceDeckColumns {
     display: grid;
-    grid-template-columns: repeat( auto-fill, minmax(145px, 1fr) );
+    grid-template-columns: repeat(5, minmax(145px, 1fr));
     gap: 12px;
+    align-items: start;
+}
+
+.publicRaceDeckColumn {
+    min-width: 0;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    padding: 8px;
+    background: #0f172a;
+}
+
+    .publicRaceDeckColumn > header {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+        .publicRaceDeckColumn > header strong {
+            font-size: 12px;
+            letter-spacing: 0.08em;
+        }
+
+        .publicRaceDeckColumn > header span {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+.publicRaceDeckColumnLION {
+    border-color: #7e22ce;
+}
+
+.publicRaceDeckColumnHOTDOG {
+    border-color: #f97316;
+}
+
+.publicRaceDeckColumnFISH {
+    border-color: #0ea5e9;
+}
+
+.publicRaceDeckColumnQUEEN {
+    border-color: #e11d48;
+}
+
+.publicRaceDeckColumnGREEN {
+    border-color: #22c55e;
+}
+
+.publicRaceDeckCardList {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.emptyDeckColumn {
+    color: #64748b;
+    font-size: 12px;
+}
+
+@media (max-width: 1250px) {
+    .publicRaceDeckColumns {
+        grid-template-columns: repeat(3, minmax(145px, 1fr));
+    }
+}
+
+@media (max-width: 800px) {
+    .publicRaceDeckColumns {
+        grid-template-columns: repeat(2, minmax(145px, 1fr));
+    }
 }

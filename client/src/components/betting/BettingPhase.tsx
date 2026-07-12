@@ -20,6 +20,7 @@ import "./BettingPhase.css";
 
 type BettingPhaseProps = {
     socketPlayerId: string | undefined;
+    currentPlayerName: string | null;
     draft: BettingDraftState;
     availableTickets: AvailableTicket[];
     currentSideBet: SideBetDefinition;
@@ -35,6 +36,7 @@ type SideBetAnswer = "YES" | "NO";
 
 export function BettingPhase({
     socketPlayerId,
+    currentPlayerName,
     draft,
     availableTickets,
     currentSideBet,
@@ -136,7 +138,7 @@ export function BettingPhase({
                 <strong>
                     {isMyTurn
                         ? "It is your turn!"
-                        : "Waiting for the current player…"}
+                        : `Waiting for player ${currentPlayerName ?? ""}`}
                 </strong>
             </section>
 

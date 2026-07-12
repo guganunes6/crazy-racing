@@ -366,6 +366,33 @@ input {
     color: #bbf7d0;
 }
 
+.raceAgainControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.restartGameButton {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.raceAgainPlayers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.raceAgainPlayers span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
 .doubleBetChoices {
     display: flex;
     flex-wrap: wrap;

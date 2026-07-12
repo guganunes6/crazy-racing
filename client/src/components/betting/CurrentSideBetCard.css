@@ -1,0 +1,41 @@
+.currentSideBetCard {
+    margin-top: 18px;
+    overflow: hidden;
+    border: 3px solid #64748b;
+    border-radius: 16px;
+    background: #0f172a;
+}
+
+    .currentSideBetCard header {
+        padding: 10px;
+        background: #1e293b;
+        color: #facc15;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+.currentSideBetAnswers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+    .currentSideBetAnswers span {
+        padding: 9px;
+        font-weight: 900;
+        text-align: center;
+    }
+
+.sideBetYes {
+    background: #15803d;
+}
+
+.sideBetNo {
+    background: #b91c1c;
+}
+
+.currentSideBetCard p {
+    margin: 0;
+    padding: 14px;
+    line-height: 1.4;
+}

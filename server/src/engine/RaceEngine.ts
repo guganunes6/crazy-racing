@@ -54,7 +54,7 @@ export class RaceEngine {
                 : definition.racer;
 
         this.room.raceLog.push(
-            `CARD DRAWN — ${owner}: ${definition.name}`
+            `CARD DRAWN - ${owner}: ${definition.name}`
         );
 
         executeCardDefinition(
