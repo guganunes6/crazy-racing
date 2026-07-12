@@ -13,13 +13,15 @@ import {
     type RaceCard,
     type RacerState,
     type SideBetDefinition,
-    type TicketStackState
+    type TicketStackState,
+    type RaceEvent
 } from "@crazy-racing/shared";
 import { nanoid } from "nanoid";
 
 import {
+    createCompleteCardSupply,
     createInitialRaceDeck,
-    drawCatalogCard,
+    drawRandomCardFromSupply,
     prepareDeckForRace
 } from "./engine/Deck.js";
 import { RaceEngine } from "./engine/RaceEngine.js";
@@ -65,9 +67,12 @@ export type Room = {
     podium: PodiumEntry[];
 
     raceLog: string[];
+    raceEvents: RaceEvent[];
+    nextRaceEventSequence: number;
     currentCard: RaceCard | null;
     deck: RaceCard[];
     discard: RaceCard[];
+    availableCards: RaceCard[];
 
     publicRaceDeckDefinitionIds: string[];
 
@@ -102,9 +107,12 @@ export function createRoom(
         podium: [],
 
         raceLog: [],
+        raceEvents: [],
+        nextRaceEventSequence: 1,
         currentCard: null,
         deck: [],
         discard: [],
+        availableCards: [],
 
         publicRaceDeckDefinitionIds: [],
 
@@ -217,6 +225,9 @@ export function startGame(
     room.availableSideBetIds = SIDE_BETS.map(
         (sideBet) => sideBet.id
     );
+
+    room.availableCards =
+        createCompleteCardSupply();
 
     setupFirstRace(room);
 }
@@ -468,9 +479,12 @@ export function restartGame(
 
     room.podium = [];
     room.raceLog = [];
+    room.raceEvents = [];
+    room.nextRaceEventSequence = 1;
     room.currentCard = null;
     room.deck = [];
     room.discard = [];
+    room.availableCards = [];
 
     room.publicRaceDeckDefinitionIds =
         [];
@@ -514,7 +528,8 @@ function setupFirstRace(
 
     room.deck =
         createInitialRaceDeck(
-            room.players.length
+            room.players.length,
+            room.availableCards
         );
 
     fillInitialPlayerHands(room);
@@ -539,7 +554,9 @@ function setupFollowingRace(
      */
     for (const player of room.players) {
         player.hand.push(
-            drawCatalogCard()
+            drawRandomCardFromSupply(
+                room.availableCards
+            )
         );
     }
 
@@ -555,6 +572,8 @@ function resetRaceBoardState(
         createInitialRacers();
 
     room.raceLog = [];
+    room.raceEvents = [];
+    room.nextRaceEventSequence = 1;
     room.currentCard = null;
 
     /*
@@ -585,7 +604,9 @@ function fillInitialPlayerHands(
             handSize
         ) {
             player.hand.push(
-                drawCatalogCard()
+                drawRandomCardFromSupply(
+                    room.availableCards
+                )
             );
         }
     }

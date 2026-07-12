@@ -10,21 +10,39 @@ import {
     checkRaceEnd,
     disqualifyRacersTogether
 } from "./Podium.js";
+import {
+    recordRaceEvent,
+    recordRaceState
+} from "./RaceEvents.js";
 
 export function reshuffleRaceDeck(
     room: Room
 ): void {
-    if (room.phase !== "reshuffle-required") {
+    if (
+        room.phase !==
+        "reshuffle-required"
+    ) {
         throw new Error(
             "The racing deck does not need reshuffling."
         );
     }
 
-    room.raceLog.push(
-        "The racing deck is reshuffled."
+    rebuildDeckFromDiscard(
+        room
     );
 
-    rebuildDeckFromDiscard(room);
+    recordRaceEvent(room, {
+        type:
+            "DECK_RESHUFFLED",
+        cardCount:
+            room.deck.length +
+            room.discard.length,
+        burnedCardCount:
+            Math.min(
+                3,
+                room.discard.length
+            )
+    });
 
     if (
         room.shortenedBy <
@@ -32,30 +50,48 @@ export function reshuffleRaceDeck(
     ) {
         room.shortenedBy += 1;
 
-        const newTrackStart = visibleStart(
-            room.shortenedBy
-        );
+        const newStartPosition =
+            visibleStart(
+                room.shortenedBy
+            );
 
-        room.raceLog.push(
-            `The racing field folds to level ${room.shortenedBy}.`
-        );
-
-        const racersUnderFold = room.racers
-            .filter(
+        const racersUnderFold =
+            room.racers.filter(
                 (racer) =>
                     !racer.finished &&
                     !racer.dq &&
-                    racer.position < newTrackStart
-            )
-            .map((racer) => ({
-                racer,
-                reason:
-                    "was underneath the folded section of the track"
-            }));
+                    racer.position <
+                    newStartPosition
+            );
 
         disqualifyRacersTogether(
             room,
-            racersUnderFold
+            racersUnderFold.map(
+                (racer) => ({
+                    racer,
+                    reason:
+                        "was underneath the folded section of the track",
+                    reasonCode:
+                        "fold" as const
+                })
+            )
+        );
+
+        recordRaceEvent(room, {
+            type: "TRACK_FOLDED",
+            foldLevel:
+                room.shortenedBy,
+            newStartPosition,
+            disqualifiedRacers:
+                racersUnderFold.map(
+                    (racer) =>
+                        racer.name
+                )
+        });
+
+        recordRaceState(
+            room,
+            "FOLD"
         );
     }
 

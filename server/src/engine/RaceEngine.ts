@@ -7,15 +7,17 @@ import {
     discardCard,
     drawTopCard
 } from "./Deck.js";
+import { executeCardDefinition } from "./CardExecutor.js";
+import { checkRaceEnd } from "./Podium.js";
 import {
-    executeCardDefinition
-} from "./CardExecutor.js";
-import {
-    checkRaceEnd
-} from "./Podium.js";
+    recordRaceEvent,
+    recordRaceState
+} from "./RaceEvents.js";
 
 export class RaceEngine {
-    constructor(private readonly room: Room) { }
+    constructor(
+        private readonly room: Room
+    ) { }
 
     playNextCard(): RaceCard | undefined {
         if (this.room.phase !== "racing") {
@@ -41,25 +43,25 @@ export class RaceEngine {
             CARD_CATALOG_BY_ID[card.definitionId];
 
         if (!definition) {
-            this.room.raceLog.push(
-                `Unknown card drawn: ${card.definitionId}.`
-            );
-
             return card;
         }
 
-        const owner =
-            definition.racer === "GREEN"
-                ? "GREEN"
-                : definition.racer;
-
-        this.room.raceLog.push(
-            `CARD DRAWN - ${owner}: ${definition.name}`
-        );
+        recordRaceEvent(this.room, {
+            type: "CARD_DRAWN",
+            cardId: card.id,
+            definitionId: definition.id,
+            owner: definition.racer,
+            cardName: definition.name
+        });
 
         executeCardDefinition(
             this.room,
             definition
+        );
+
+        recordRaceState(
+            this.room,
+            "CARD"
         );
 
         checkRaceEnd(this.room);
@@ -68,7 +70,8 @@ export class RaceEngine {
             this.room.phase === "racing" &&
             this.room.deck.length === 0
         ) {
-            this.room.phase = "reshuffle-required";
+            this.room.phase =
+                "reshuffle-required";
         }
 
         return card;

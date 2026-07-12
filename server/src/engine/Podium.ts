@@ -1,17 +1,30 @@
-import type { RacerState } from "@crazy-racing/shared";
+import type {
+    DisqualificationReason,
+    RacerState
+} from "@crazy-racing/shared";
 import type { Room } from "../gameLogic.js";
+import {
+    recordRaceEvent,
+    recordRaceState
+} from "./RaceEvents.js";
 
 export function finishRacer(
     room: Room,
     racer: RacerState
 ): void {
-    if (racer.finished || racer.dq) {
+    if (
+        racer.finished ||
+        racer.dq
+    ) {
         return;
     }
 
     racer.finished = true;
 
-    const place = getHighestAvailablePlace(room);
+    const place =
+        getHighestAvailablePlace(
+            room
+        );
 
     room.podium.push({
         place,
@@ -19,22 +32,44 @@ export function finishRacer(
         status: "finished"
     });
 
-    room.raceLog.push(
-        `${racer.name} crosses the finish line and takes place ${place}.`
+    recordRaceEvent(room, {
+        type: "RACER_FINISHED",
+        racer: racer.name,
+        place
+    });
+
+    recordRaceEvent(room, {
+        type: "PODIUM_ASSIGNED",
+        racer: racer.name,
+        place,
+        status: "finished",
+        sharedPlace: false
+    });
+
+    recordRaceState(
+        room,
+        "FINISH"
     );
 }
 
 export function disqualifyRacer(
     room: Room,
     racer: RacerState,
-    reason: string
+    reason: string,
+    reasonCode:
+        DisqualificationReason =
+        "other"
 ): void {
-    disqualifyRacersTogether(room, [
-        {
-            racer,
-            reason
-        }
-    ]);
+    disqualifyRacersTogether(
+        room,
+        [
+            {
+                racer,
+                reason,
+                reasonCode
+            }
+        ]
+    );
 }
 
 export function disqualifyRacersTogether(
@@ -42,80 +77,174 @@ export function disqualifyRacersTogether(
     disqualifications: Array<{
         racer: RacerState;
         reason: string;
+        reasonCode:
+        DisqualificationReason;
     }>
 ): void {
-    const validDisqualifications = disqualifications.filter(
-        ({ racer }) => !racer.finished && !racer.dq
-    );
+    const valid =
+        disqualifications.filter(
+            ({ racer }) =>
+                !racer.finished &&
+                !racer.dq
+        );
 
-    if (validDisqualifications.length === 0) {
+    if (valid.length === 0) {
         return;
     }
 
-    /*
-     * Racers disqualified by the same event share the same
-     * lowest available podium place.
-     */
-    const sharedPlace = getLowestAvailablePlace(room);
+    const sharedPlace =
+        getLowestAvailablePlace(
+            room
+        );
 
-    for (const { racer, reason } of validDisqualifications) {
+    const isShared =
+        valid.length > 1;
+
+    for (
+        const {
+            racer,
+            reason,
+            reasonCode
+        } of valid
+    ) {
         racer.dq = true;
 
         room.podium.push({
-            place: sharedPlace,
-            racer: racer.name,
+            place:
+                sharedPlace,
+            racer:
+                racer.name,
             status: "DQ",
             reason
         });
 
-        room.raceLog.push(
-            `${racer.name} is DQ and takes place ${sharedPlace}: ${reason}.`
-        );
+        recordRaceEvent(room, {
+            type:
+                "RACER_DISQUALIFIED",
+            racer:
+                racer.name,
+            reason,
+            reasonCode
+        });
+
+        recordRaceEvent(room, {
+            type:
+                "PODIUM_ASSIGNED",
+            racer:
+                racer.name,
+            place:
+                sharedPlace,
+            status:
+                "DQ",
+            sharedPlace:
+                isShared
+        });
     }
+
+    recordRaceState(
+        room,
+        "DQ"
+    );
 }
 
-export function checkRaceEnd(room: Room): boolean {
-    const completedRacers = room.racers.filter(
-        (racer) => racer.finished || racer.dq
-    );
+export function checkRaceEnd(
+    room: Room
+): boolean {
+    const completed =
+        room.racers.filter(
+            (racer) =>
+                racer.finished ||
+                racer.dq
+        );
 
-    if (completedRacers.length < 3) {
+    if (
+        completed.length < 3
+    ) {
         return false;
     }
 
-    const remainingRacers = room.racers.filter(
-        (racer) => !racer.finished && !racer.dq
-    );
+    const remaining =
+        room.racers.filter(
+            (racer) =>
+                !racer.finished &&
+                !racer.dq
+        );
 
-    for (const racer of remainingRacers) {
+    for (const racer of remaining) {
         racer.finished = true;
 
-        const place = getHighestAvailablePlace(room);
+        const place =
+            getHighestAvailablePlace(
+                room
+            );
 
         room.podium.push({
             place,
-            racer: racer.name,
-            status: "remaining"
+            racer:
+                racer.name,
+            status:
+                "remaining"
         });
 
-        room.raceLog.push(
-            `${racer.name} takes the final available place: ${place}.`
-        );
+        recordRaceEvent(room, {
+            type:
+                "PODIUM_ASSIGNED",
+            racer:
+                racer.name,
+            place,
+            status:
+                "remaining",
+            sharedPlace:
+                false
+        });
     }
 
     room.phase = "payouts";
+
+    recordRaceEvent(room, {
+        type: "RACE_ENDED",
+        podium:
+            room.podium.map(
+                (entry) => ({
+                    racer:
+                        entry.racer,
+                    place:
+                        entry.place ?? 4,
+                    status:
+                        entry.status
+                })
+            )
+    });
+
     return true;
 }
 
-export function getHighestAvailablePlace(room: Room): number {
-    const occupiedPlaces = new Set(
-        room.podium
-            .map((entry) => entry.place)
-            .filter((place): place is number => place !== undefined)
-    );
+export function getHighestAvailablePlace(
+    room: Room
+): number {
+    const occupied =
+        new Set(
+            room.podium
+                .map(
+                    (entry) =>
+                        entry.place
+                )
+                .filter(
+                    (
+                        place
+                    ): place is number =>
+                        place !== undefined
+                )
+        );
 
-    for (let place = 1; place <= 4; place++) {
-        if (!occupiedPlaces.has(place)) {
+    for (
+        let place = 1;
+        place <= 4;
+        place++
+    ) {
+        if (
+            !occupied.has(place)
+        ) {
             return place;
         }
     }
@@ -123,15 +252,32 @@ export function getHighestAvailablePlace(room: Room): number {
     return 4;
 }
 
-export function getLowestAvailablePlace(room: Room): number {
-    const occupiedPlaces = new Set(
-        room.podium
-            .map((entry) => entry.place)
-            .filter((place): place is number => place !== undefined)
-    );
+export function getLowestAvailablePlace(
+    room: Room
+): number {
+    const occupied =
+        new Set(
+            room.podium
+                .map(
+                    (entry) =>
+                        entry.place
+                )
+                .filter(
+                    (
+                        place
+                    ): place is number =>
+                        place !== undefined
+                )
+        );
 
-    for (let place = 4; place >= 1; place--) {
-        if (!occupiedPlaces.has(place)) {
+    for (
+        let place = 4;
+        place >= 1;
+        place--
+    ) {
+        if (
+            !occupied.has(place)
+        ) {
             return place;
         }
     }

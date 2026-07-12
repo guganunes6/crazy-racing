@@ -187,7 +187,10 @@ function publicRoom(
             room.podium,
 
         raceLog:
-            room.raceLog
+            room.raceLog,
+
+        raceEvents:
+            room.raceEvents
     };
 }
 

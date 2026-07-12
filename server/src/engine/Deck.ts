@@ -19,57 +19,117 @@ const RANDOM_CARDS_BY_PLAYER_COUNT: Record<number, number> = {
     9: 14
 };
 
-export function createInitialRaceDeck(playerCount: number): RaceCard[] {
-    const cards: RaceCard[] = [];
-
-    /*
-     * These remain the four guaranteed starting cards.
-     * We are currently using Recover then Move 2 for each mascot.
-     */
-    for (const racer of RACERS) {
-        const startingDefinition = CARD_CATALOG.find(
-            (definition) =>
-                definition.racer === racer &&
-                definition.id === `${racer}_RECOVER_MOVE_2`
-        );
-
-        if (!startingDefinition) {
-            throw new Error(`Missing starting card for ${racer}.`);
-        }
-
-        cards.push(createRaceCard(startingDefinition));
-    }
-
-    const startingDefinitionIds = new Set(
-        cards.map((card) => card.definitionId)
+/**
+ * Creates the complete finite supply of physical racing cards.
+ *
+ * CARD_CATALOG already contains:
+ * - one definition for each single-copy card;
+ * - two separate definitions for each duplicated green card.
+ *
+ * Therefore this creates exactly 53 card instances.
+ */
+export function createCompleteCardSupply(): RaceCard[] {
+    return CARD_CATALOG.map((definition) =>
+        createRaceCard(definition)
     );
-
-    const availableDefinitions = CARD_CATALOG.filter(
-        (definition) => !startingDefinitionIds.has(definition.id)
-    );
-
-    shuffle(availableDefinitions);
-
-    const randomCardCount = RANDOM_CARDS_BY_PLAYER_COUNT[playerCount] ?? 8;
-
-    cards.push(
-        ...availableDefinitions
-            .slice(0, randomCardCount)
-            .map(createRaceCard)
-    );
-
-    return cards;
 }
 
-export function drawCatalogCard(): RaceCard {
-    const definition =
-        CARD_CATALOG[Math.floor(Math.random() * CARD_CATALOG.length)];
+/**
+ * Creates the first public racing deck by removing cards
+ * from the finite available-card supply.
+ */
+export function createInitialRaceDeck(
+    playerCount: number,
+    availableCards: RaceCard[]
+): RaceCard[] {
+    const deck: RaceCard[] = [];
 
-    if (!definition) {
-        throw new Error("The racing-card catalog is empty.");
+    /*
+     * The four guaranteed cards are physically removed
+     * from the shared supply first.
+     */
+    for (const racer of RACERS) {
+        const guaranteedDefinitionId =
+            `${racer}_RECOVER_MOVE_2`;
+
+        const guaranteedCard =
+            takeCardByDefinitionId(
+                availableCards,
+                guaranteedDefinitionId
+            );
+
+        deck.push(guaranteedCard);
     }
 
-    return createRaceCard(definition);
+    const randomCardCount =
+        RANDOM_CARDS_BY_PLAYER_COUNT[playerCount] ?? 8;
+
+    deck.push(
+        ...drawRandomCardsFromSupply(
+            availableCards,
+            randomCardCount
+        )
+    );
+
+    return deck;
+}
+
+/**
+ * Removes and returns one random card from the finite supply.
+ */
+export function drawRandomCardFromSupply(
+    availableCards: RaceCard[]
+): RaceCard {
+    if (availableCards.length === 0) {
+        throw new Error(
+            "There are no racing cards remaining in the supply."
+        );
+    }
+
+    const randomIndex = Math.floor(
+        Math.random() * availableCards.length
+    );
+
+    const [card] = availableCards.splice(randomIndex, 1);
+
+    if (!card) {
+        throw new Error(
+            "Failed to draw a racing card from the supply."
+        );
+    }
+
+    return card;
+}
+
+/**
+ * Removes several random cards from the same finite supply.
+ */
+export function drawRandomCardsFromSupply(
+    availableCards: RaceCard[],
+    amount: number
+): RaceCard[] {
+    if (amount < 0) {
+        throw new Error(
+            "The number of cards to draw cannot be negative."
+        );
+    }
+
+    if (availableCards.length < amount) {
+        throw new Error(
+            `Cannot draw ${amount} cards. ` +
+            `Only ${availableCards.length} remain in the supply.`
+        );
+    }
+
+    const cards: RaceCard[] = [];
+
+    for (let index = 0; index < amount; index++) {
+        cards.push(
+            drawRandomCardFromSupply(availableCards)
+        );
+    }
+
+    return cards;
 }
 
 export function createRaceCard(
@@ -84,73 +144,165 @@ export function createRaceCard(
     };
 }
 
-export function drawTopCard(room: Room): RaceCard | undefined {
+export function drawTopCard(
+    room: Room
+): RaceCard | undefined {
     return room.deck.shift();
 }
 
-export function discardCard(room: Room, card: RaceCard): void {
+export function discardCard(
+    room: Room,
+    card: RaceCard
+): void {
     room.discard.push(card);
 }
 
-export function burnThreeCards(room: Room): void {
-    const burnedCards = room.deck.splice(0, 3);
-    room.discard.push(...burnedCards);
+export function burnThreeCards(
+    room: Room
+): void {
+    const burnedCards =
+        room.deck.splice(0, 3);
 
-    room.raceLog.push(`${burnedCards.length} card(s) discarded.`);
+    room.discard.push(
+        ...burnedCards
+    );
 }
 
-export function prepareDeckForRace(room: Room): void {
+export function prepareDeckForRace(
+    room: Room
+): void {
     shuffle(room.deck);
     burnThreeCards(room);
 }
 
-export function rebuildDeckFromDiscard(room: Room): void {
-    room.deck = [...room.discard];
+export function rebuildDeckFromDiscard(
+    room: Room
+): void {
+    room.deck = [
+        ...room.discard
+    ];
+
     room.discard = [];
 
     shuffle(room.deck);
     burnThreeCards(room);
 }
 
-export function shuffle<T>(items: T[]): void {
-    for (let index = items.length - 1; index > 0; index--) {
-        const randomIndex = Math.floor(Math.random() * (index + 1));
+export function shuffle<T>(
+    items: T[]
+): void {
+    for (
+        let index = items.length - 1;
+        index > 0;
+        index--
+    ) {
+        const randomIndex =
+            Math.floor(
+                Math.random() *
+                (index + 1)
+            );
 
-        [items[index], items[randomIndex]] = [
-            items[randomIndex],
-            items[index]
-        ];
+        [
+            items[index],
+            items[randomIndex]
+        ] = [
+                items[randomIndex],
+                items[index]
+            ];
     }
+}
+
+function takeCardByDefinitionId(
+    availableCards: RaceCard[],
+    definitionId: string
+): RaceCard {
+    const cardIndex =
+        availableCards.findIndex(
+            (card) =>
+                card.definitionId === definitionId
+        );
+
+    if (cardIndex < 0) {
+        throw new Error(
+            `Card is unavailable: ${definitionId}`
+        );
+    }
+
+    const [card] =
+        availableCards.splice(
+            cardIndex,
+            1
+        );
+
+    if (!card) {
+        throw new Error(
+            `Failed to remove card: ${definitionId}`
+        );
+    }
+
+    return card;
 }
 
 function getLegacyCardType(
     definition: RaceCardDefinition
 ): CardType {
-    const actions = definition.actions;
+    const actions =
+        definition.actions;
 
-    if (actions.some((action) => action.type === "SWERVE_LEFT")) {
+    if (
+        actions.some(
+            (action) =>
+                action.type === "SWERVE_LEFT"
+        )
+    ) {
         return "swerve-left";
     }
 
-    if (actions.some((action) => action.type === "SWERVE_RIGHT")) {
+    if (
+        actions.some(
+            (action) =>
+                action.type === "SWERVE_RIGHT"
+        )
+    ) {
         return "swerve-right";
     }
 
-    if (actions.some((action) => action.type === "MOVE_TO_STAR")) {
+    if (
+        actions.some(
+            (action) =>
+                action.type === "MOVE_TO_STAR"
+        )
+    ) {
         return "move-to-star";
     }
 
-    if (actions.some((action) => action.type === "FALL_DOWN")) {
+    if (
+        actions.some(
+            (action) =>
+                action.type === "FALL_DOWN"
+        )
+    ) {
         return "fall";
     }
 
-    if (actions.some((action) => action.type === "TURN_AROUND")) {
+    if (
+        actions.some(
+            (action) =>
+                action.type === "TURN_AROUND"
+        )
+    ) {
         return "turn";
     }
 
     if (
-        actions.some((action) => action.type === "RECOVER") &&
-        !actions.some((action) => action.type === "MOVE")
+        actions.some(
+            (action) =>
+                action.type === "RECOVER"
+        ) &&
+        !actions.some(
+            (action) =>
+                action.type === "MOVE"
+        )
     ) {
         return "recover";
     }
@@ -161,9 +313,11 @@ function getLegacyCardType(
 function getLegacyCardValue(
     definition: RaceCardDefinition
 ): number | null {
-    const moveAction = definition.actions.find(
-        (action) => action.type === "MOVE"
-    );
+    const moveAction =
+        definition.actions.find(
+            (action) =>
+                action.type === "MOVE"
+        );
 
     return moveAction?.type === "MOVE"
         ? moveAction.value

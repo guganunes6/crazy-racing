@@ -1,7 +1,7 @@
-import {
-    type CardAction,
-    type RaceCardDefinition,
-    type RacerState
+import type {
+    CardAction,
+    RaceCardDefinition,
+    RacerState
 } from "@crazy-racing/shared";
 import type { Room } from "../gameLogic.js";
 import {
@@ -13,13 +13,21 @@ import {
     checkRaceEnd,
     disqualifyRacer
 } from "./Podium.js";
+import {
+    recordRaceEvent,
+    recordRaceState
+} from "./RaceEvents.js";
 
 export function executeCardDefinition(
     room: Room,
     definition: RaceCardDefinition
 ): void {
     if (definition.green) {
-        executeGreenCard(room, definition);
+        executeGreenCard(
+            room,
+            definition
+        );
+
         return;
     }
 
@@ -28,19 +36,24 @@ export function executeCardDefinition(
     }
 
     const racer = room.racers.find(
-        (candidate) => candidate.name === definition.racer
+        (candidate) =>
+            candidate.name ===
+            definition.racer
     );
 
-    if (!racer || racer.finished || racer.dq) {
-        room.raceLog.push(
-            `${definition.name} has no effect because ${definition.racer} is no longer racing.`
-        );
-
+    if (
+        !racer ||
+        racer.finished ||
+        racer.dq
+    ) {
         return;
     }
 
     for (const action of definition.actions) {
-        if (racer.finished || racer.dq) {
+        if (
+            racer.finished ||
+            racer.dq
+        ) {
             break;
         }
 
@@ -61,15 +74,13 @@ function executeGreenCard(
     room: Room,
     definition: RaceCardDefinition
 ): void {
-
-    /*
-     * Each action affects every active mascot.
-     * Green movement cannot collide or finish.
-     */
     for (const action of definition.actions) {
-        const activeRacers = room.racers.filter(
-            (racer) => !racer.finished && !racer.dq
-        );
+        const activeRacers =
+            room.racers.filter(
+                (racer) =>
+                    !racer.finished &&
+                    !racer.dq
+            );
 
         for (const racer of activeRacers) {
             executeAction(
@@ -93,8 +104,11 @@ function executeAction(
     definition: RaceCardDefinition
 ): void {
     const movementOptions = {
-        canCollide: definition.canCollide,
-        canFinish: definition.canFinish
+        canCollide:
+            definition.canCollide,
+
+        canFinish:
+            definition.canFinish
     };
 
     switch (action.type) {
@@ -120,11 +134,17 @@ function executeAction(
             return;
 
         case "TURN_AROUND":
-            turnRacerAround(room, racer);
+            turnRacerAround(
+                room,
+                racer
+            );
             return;
 
         case "FALL_DOWN":
-            makeRacerFall(room, racer);
+            makeRacerFall(
+                room,
+                racer
+            );
             return;
 
         case "SWERVE_LEFT":
@@ -154,8 +174,14 @@ function recoverRacer(
     racer.fallen = false;
     racer.facing = 1;
 
-    room.raceLog.push(
-        `${racer.name} recovers, stands up and faces the finish line.`
+    recordRaceEvent(room, {
+        type: "RACER_RECOVERED",
+        racer: racer.name
+    });
+
+    recordRaceState(
+        room,
+        "RECOVER"
     );
 }
 
@@ -163,10 +189,20 @@ function turnRacerAround(
     room: Room,
     racer: RacerState
 ): void {
-    racer.facing = racer.facing === 1 ? -1 : 1;
+    racer.facing =
+        racer.facing === 1
+            ? -1
+            : 1;
 
-    room.raceLog.push(
-        `${racer.name} turns around.`
+    recordRaceEvent(room, {
+        type: "RACER_TURNED",
+        racer: racer.name,
+        facing: racer.facing
+    });
+
+    recordRaceState(
+        room,
+        "TURN"
     );
 }
 
@@ -178,7 +214,8 @@ function makeRacerFall(
         disqualifyRacer(
             room,
             racer,
-            "had to fall down while already fallen"
+            "had to fall while already fallen",
+            "knockout"
         );
 
         return;
@@ -186,7 +223,14 @@ function makeRacerFall(
 
     racer.fallen = true;
 
-    room.raceLog.push(
-        `${racer.name} falls down.`
+    recordRaceEvent(room, {
+        type: "RACER_FELL",
+        racer: racer.name,
+        cause: "CARD"
+    });
+
+    recordRaceState(
+        room,
+        "FALL"
     );
 }

@@ -4,11 +4,17 @@ import {
     type RacerState
 } from "@crazy-racing/shared";
 import type { Room } from "../gameLogic.js";
-import { resolveCollisions } from "./Collision.js";
+import {
+    resolveCollisions
+} from "./Collision.js";
 import {
     disqualifyRacer,
     finishRacer
 } from "./Podium.js";
+import {
+    recordRaceEvent,
+    recordRaceState
+} from "./RaceEvents.js";
 
 export type MovementOptions = {
     canCollide: boolean;
@@ -19,19 +25,27 @@ export function moveRacer(
     room: Room,
     racer: RacerState,
     value: number,
-    options: MovementOptions
+    options: MovementOptions,
+    moveToStar = false
 ): void {
-    if (racer.finished || racer.dq || value === 0) {
+    if (
+        racer.finished ||
+        racer.dq ||
+        value === 0
+    ) {
         return;
     }
 
-    /*
-     * Fallen mascots crawl a maximum of one space.
-     * The original movement sign is preserved.
-     */
-    const effectiveValue = racer.fallen
-        ? Math.sign(value)
-        : value;
+    const startingPosition =
+        racer.position;
+
+    const crawling =
+        racer.fallen;
+
+    const effectiveValue =
+        crawling
+            ? Math.sign(value)
+            : value;
 
     const movementDirection =
         effectiveValue >= 0
@@ -40,56 +54,96 @@ export function moveRacer(
                 ? -1
                 : 1;
 
-    const numberOfSteps = Math.abs(effectiveValue);
+    const numberOfSteps =
+        Math.abs(effectiveValue);
 
-    for (let step = 0; step < numberOfSteps; step++) {
-        racer.position += movementDirection;
+    let actualSteps = 0;
 
-        if (isBehindTrack(room, racer)) {
+    for (
+        let step = 0;
+        step < numberOfSteps;
+        step++
+    ) {
+        racer.position +=
+            movementDirection;
+
+        actualSteps += 1;
+
+        if (
+            racer.position <
+            visibleStart(
+                room.shortenedBy
+            )
+        ) {
             disqualifyRacer(
                 room,
                 racer,
-                "moved off the back of the track"
+                "moved off the back of the track",
+                "back-out-of-bounds"
             );
 
             return;
         }
 
-        /*
-         * Green cards cannot finish. They move as far as possible
-         * without crossing the finish line.
-         */
         if (
             !options.canFinish &&
-            racer.position >= BOARD.finishPosition
+            racer.position >=
+            BOARD.finishPosition
         ) {
-            racer.position = BOARD.finishPosition;
+            racer.position =
+                BOARD.finishPosition;
+
             break;
         }
 
         if (
             options.canFinish &&
-            racer.position >= BOARD.finishPosition
+            racer.position >=
+            BOARD.finishPosition
         ) {
-            finishRacer(room, racer);
+            recordMovement(
+                room,
+                racer,
+                startingPosition,
+                value,
+                actualSteps,
+                crawling,
+                moveToStar,
+                options
+            );
+
+            finishRacer(
+                room,
+                racer
+            );
+
             return;
         }
 
-        /*
-         * Collision checks happen after every individual space,
-         * allowing collisions with racers that are passed through.
-         */
         if (options.canCollide) {
-            resolveCollisions(room, racer);
+            resolveCollisions(
+                room,
+                racer
+            );
         }
 
-        if (racer.finished || racer.dq) {
+        if (
+            racer.finished ||
+            racer.dq
+        ) {
             return;
         }
     }
 
-    room.raceLog.push(
-        `${racer.name} moves ${value}.`
+    recordMovement(
+        room,
+        racer,
+        startingPosition,
+        value,
+        actualSteps,
+        crawling,
+        moveToStar,
+        options
     );
 }
 
@@ -98,85 +152,155 @@ export function moveRacerToNextStar(
     racer: RacerState,
     options: MovementOptions
 ): void {
-    if (racer.finished || racer.dq) {
+    if (
+        racer.finished ||
+        racer.dq
+    ) {
         return;
     }
 
-    const stars = [...BOARD.stars].sort((first, second) =>
-        racer.facing === 1
-            ? first - second
-            : second - first
-    );
-
-    const destination = stars.find((starPosition) =>
-        racer.facing === 1
-            ? starPosition > racer.position
-            : starPosition < racer.position
-    );
-
-    if (destination === undefined) {
-        room.raceLog.push(
-            `${racer.name} has no star in the direction it is facing.`
+    const stars =
+        [...BOARD.stars].sort(
+            (first, second) =>
+                racer.facing === 1
+                    ? first - second
+                    : second - first
         );
 
+    const destination =
+        stars.find(
+            (starPosition) =>
+                racer.facing === 1
+                    ? starPosition >
+                    racer.position
+                    : starPosition <
+                    racer.position
+        );
+
+    if (
+        destination === undefined
+    ) {
         return;
     }
 
-    /*
-     * moveRacer applies movement relative to facing.
-     * Therefore the distance passed here is always positive.
-     */
-    const distance = Math.abs(destination - racer.position);
+    const distance =
+        Math.abs(
+            destination -
+            racer.position
+        );
 
-    moveRacer(room, racer, distance, options);
+    moveRacer(
+        room,
+        racer,
+        distance,
+        options,
+        true
+    );
 }
 
 export function swerveRacer(
     room: Room,
     racer: RacerState,
-    relativeDirection: "LEFT" | "RIGHT",
+    relativeDirection:
+        | "LEFT"
+        | "RIGHT",
     canCollide: boolean
 ): void {
-    if (racer.finished || racer.dq) {
+    if (
+        racer.finished ||
+        racer.dq
+    ) {
         return;
     }
 
+    const fromLane =
+        racer.lane;
+
     const baseLaneDelta =
-        relativeDirection === "LEFT" ? -1 : 1;
+        relativeDirection ===
+            "LEFT"
+            ? -1
+            : 1;
 
-    /*
-     * Left and right are relative to the direction the mascot faces.
-     */
     const actualLaneDelta =
-        baseLaneDelta * racer.facing;
+        baseLaneDelta *
+        racer.facing;
 
-    racer.lane += actualLaneDelta;
+    racer.lane +=
+        actualLaneDelta;
 
     if (
         racer.lane < 0 ||
-        racer.lane >= BOARD.laneCount
+        racer.lane >=
+        BOARD.laneCount
     ) {
         disqualifyRacer(
             room,
             racer,
-            "swerved off the side of the track"
+            "swerved off the side of the track",
+            "side-out-of-bounds"
         );
 
         return;
     }
 
+    recordRaceEvent(room, {
+        type: "RACER_SWERVED",
+        racer: racer.name,
+        fromLane,
+        toLane: racer.lane,
+        position: racer.position,
+        direction:
+            relativeDirection
+    });
+
     if (canCollide) {
-        resolveCollisions(room, racer);
+        resolveCollisions(
+            room,
+            racer
+        );
     }
 
-    room.raceLog.push(
-        `${racer.name} swerves ${relativeDirection.toLowerCase()}.`
+    recordRaceState(
+        room,
+        "SWERVE"
     );
 }
 
-function isBehindTrack(
+function recordMovement(
     room: Room,
-    racer: RacerState
-): boolean {
-    return racer.position < visibleStart(room.shortenedBy);
+    racer: RacerState,
+    startingPosition: number,
+    requestedDistance: number,
+    actualSteps: number,
+    crawling: boolean,
+    moveToStar: boolean,
+    options: MovementOptions
+): void {
+    recordRaceEvent(room, {
+        type: "RACER_MOVED",
+        racer: racer.name,
+        fromPosition:
+            startingPosition,
+        toPosition:
+            racer.position,
+        lane:
+            racer.lane,
+        requestedDistance,
+        actualDistance:
+            actualSteps,
+        facing:
+            racer.facing,
+        crawling,
+        moveToStar,
+        collisionsEnabled:
+            options.canCollide,
+        finishingEnabled:
+            options.canFinish
+    });
+
+    recordRaceState(
+        room,
+        "MOVE"
+    );
 }

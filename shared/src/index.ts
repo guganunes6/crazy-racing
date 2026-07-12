@@ -19,3 +19,5 @@ export * from "./cards/SideBets";
 export * from "./types/Betting";
 
 export * from "./types/PublicGameState";
+
+export * from "./types/RaceEvent";
