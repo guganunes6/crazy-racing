@@ -5,7 +5,7 @@ export const BOARD = {
 
     startPosition: 2,
 
-    finishPosition: 12,
+    finishPosition: 13,
 
     stars: [0, 7, 12, 13],
 
@@ -17,7 +17,7 @@ export function isStar(position: number) {
 }
 
 export function isFinish(position: number) {
-    return position === BOARD.finishPosition;
+    return position === BOARD.finishPosition - 1;
 }
 
 export function isStart(position: number) {

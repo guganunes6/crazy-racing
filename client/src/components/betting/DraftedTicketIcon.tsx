@@ -67,7 +67,7 @@ export function DraftedTicketIcon({
             </strong>
 
             {ticket.doubled && (
-                <b>×2</b>
+                <b>x2</b>
             )}
         </div>
     );
