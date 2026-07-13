@@ -10,6 +10,8 @@ import {
     type BetRiskSide,
     type DraftedBetTicket,
     type RaceCard,
+    type RaceEvent,
+    type RacerState,
     type TicketStackKey
 } from "@crazy-racing/shared";
 
@@ -22,6 +24,7 @@ import { DraftedTicketIcon } from "./components/betting/DraftedTicketIcon";
 import { PayoutSummary } from "./components/betting/PayoutSummary";
 import { PrivateHand } from "./components/cards/PrivateHand";
 import { PublicRaceDeck } from "./components/cards/PublicRaceDeck";
+import { useRaceAnimation } from "./animation/useRaceAnimation";
 
 import "./styles.css";
 
@@ -151,6 +154,20 @@ function App() {
 
     const isHost =
         room?.hostSocketId === socket.id;
+
+    const {
+        visualRacers,
+        activeEvent,
+        activeCardOwner,
+        isAnimating
+    } = useRaceAnimation({
+        racers: (room?.racers ?? []) as RacerState[],
+        raceEvents: (room?.raceEvents ?? []) as RaceEvent[],
+        raceNumber: room?.raceNumber ?? 0,
+        enabled:
+            room?.phase === "racing" ||
+            room?.phase === "reshuffle-required"
+    });
 
     function handleSocketResponse(
         response: SocketResponse
@@ -789,11 +806,14 @@ function App() {
                     ) && (
                             <section className="racePhase">
                                 <Board
-                                    racers={room.racers}
+                                    racers={visualRacers}
                                     shortenedBy={
                                         room.shortenedBy ?? 0
                                     }
                                     remainingCards={room.deckRemaining ?? 0}
+                                    activeEvent={activeEvent}
+                                    activeCardOwner={activeCardOwner}
+                                    isAnimating={isAnimating}
                                 />
 
                                 <CurrentCard
@@ -809,6 +829,7 @@ function App() {
                                                 <button
                                                     type="button"
                                                     onClick={stepRace}
+                                                    disabled={isAnimating}
                                                 >
                                                     Flip next card
                                                 </button>
@@ -822,6 +843,7 @@ function App() {
                                                     onClick={
                                                         reshuffleRaceDeck
                                                     }
+                                                    disabled={isAnimating}
                                                 >
                                                     Reshuffle race card
                                                     deck

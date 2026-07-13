@@ -299,3 +299,175 @@
     .podiumRacer strong {
         color: #fecaca;
     }
+
+/* Milestone 4: animated racer overlay */
+.trackMat {
+    position: relative;
+    overflow: hidden;
+}
+
+.racerLayer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 70px;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.racerToken {
+    --racer-position: 0;
+    --racer-lane: 0;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% / 14);
+    height: 25%;
+    transform:
+        translateX(calc(var(--racer-position) * 100%))
+        translateY(calc(var(--racer-lane) * 100%));
+    transition:
+        transform 480ms cubic-bezier(0.22, 0.78, 0.24, 1),
+        opacity 220ms ease,
+        filter 220ms ease;
+    will-change: transform;
+}
+
+.racerToken .mascot {
+    position: absolute;
+    object-fit: contain;
+    transform-origin: center;
+    transition:
+        transform 380ms cubic-bezier(0.22, 0.78, 0.24, 1),
+        left 220ms ease,
+        top 220ms ease,
+        width 220ms ease,
+        height 220ms ease,
+        opacity 220ms ease,
+        filter 220ms ease;
+}
+
+.boardAnimating .boardDeckCounter::before {
+    content: "LIVE  ";
+    color: #22c55e;
+    animation: boardLivePulse 900ms ease-in-out infinite;
+}
+
+.racerAnimatingMove {
+    filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
+}
+
+.racerGreenAffected {
+    filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
+    animation: greenCardAffectedGlow 520ms ease-in-out;
+}
+
+.racerAnimatingCrawl .mascot {
+    animation: mascotCrawl 420ms ease-in-out;
+}
+
+.racerAnimatingSwerve .mascot {
+    animation: mascotSwerve 440ms ease-in-out;
+}
+
+.racerAnimatingFall .mascot,
+.racerAnimatingCollision .mascot {
+    animation: mascotImpact 420ms ease-out;
+}
+
+.racerAnimatingRecover .mascot {
+    animation: mascotRecover 420ms ease-out;
+}
+
+.racerAnimatingTurn .mascot {
+    animation: mascotTurn 420ms ease-in-out;
+}
+
+.racerAnimatingHit .mascot {
+    animation: mascotHit 360ms ease-out;
+}
+
+.racerAnimatingFinish {
+    animation: mascotFinish 520ms ease-out;
+}
+
+.racerAnimatingDq {
+    animation: mascotDq 520ms ease-out;
+}
+
+@keyframes boardLivePulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}
+
+@keyframes mascotCrawl {
+    0%, 100% { transform: translateY(0); }
+    35% { transform: translateY(8%) rotate(3deg); }
+    70% { transform: translateY(-4%) rotate(-2deg); }
+}
+
+@keyframes mascotSwerve {
+    0%, 100% { filter: brightness(1); }
+    45% { filter: brightness(1.35); }
+}
+
+@keyframes mascotImpact {
+    0% { filter: brightness(1); }
+    25% { filter: brightness(1.7); }
+    55% { filter: brightness(0.8); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes mascotRecover {
+    0% { filter: brightness(0.75); }
+    55% { filter: brightness(1.5); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes mascotTurn {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes mascotHit {
+    0%, 100% { transform: translateX(0); }
+    35% { transform: translateX(8%); }
+    70% { transform: translateX(-4%); }
+}
+
+@keyframes mascotFinish {
+    0% { opacity: 1; filter: brightness(1); }
+    60% { opacity: 1; filter: brightness(1.8); }
+    100% { opacity: 0; filter: brightness(2); }
+}
+
+@keyframes mascotDq {
+    0% { opacity: 1; filter: grayscale(0); }
+    45% { opacity: 0.8; filter: grayscale(1); }
+    100% { opacity: 0; filter: grayscale(1); }
+}
+
+@keyframes greenCardAffectedGlow {
+    0%, 100% {
+        filter: drop-shadow( 0 0 6px rgba(250, 204, 21, 0.65) ) drop-shadow( 0 0 12px rgba(250, 204, 21, 0.35) );
+    }
+
+    50% {
+        filter: drop-shadow( 0 0 11px rgba(250, 204, 21, 1) ) drop-shadow( 0 0 21px rgba(250, 204, 21, 0.7) );
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .racerToken,
+    .racerToken .mascot {
+        transition-duration: 1ms;
+        animation-duration: 1ms !important;
+    }
+
+    .boardAnimating .boardDeckCounter::before {
+        animation: none;
+    }
+}

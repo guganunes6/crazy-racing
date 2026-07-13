@@ -1,3 +1,7 @@
+import type {
+    RaceEvent,
+    RacerName
+} from "@crazy-racing/shared";
 import "./Board.css";
 import {
     LANE_ORDER,
@@ -5,18 +9,32 @@ import {
     getVisibleStartPosition
 } from "./BoardModel";
 import { Lane } from "./Lane";
+import { RacerLayer } from "./RacerLayer";
 
 type BoardProps = {
     racers: RacerOnBoard[];
     shortenedBy?: number;
     remainingCards: number;
+    activeEvent?: RaceEvent | null;
+    activeCardOwner?: RacerName | "GREEN" | null;
+    isAnimating?: boolean;
 };
 
-export function Board({ racers, shortenedBy = 0, remainingCards }: BoardProps) {
-    const visibleStartPosition = getVisibleStartPosition(shortenedBy);
+export function Board({
+    racers,
+    shortenedBy = 0,
+    remainingCards,
+    activeEvent = null,
+    activeCardOwner = null,
+    isAnimating = false
+}: BoardProps) {
+    const visibleStartPosition =
+        getVisibleStartPosition(shortenedBy);
 
     return (
-        <section className="boardScene">
+        <section
+            className={`boardScene ${isAnimating ? "boardAnimating" : ""}`}
+        >
             <div className="boardFrame">
                 <div className="boardTitle">
                     <span>CRAZY RACING TRACK</span>
@@ -31,10 +49,15 @@ export function Board({ racers, shortenedBy = 0, remainingCards }: BoardProps) {
                             key={laneName}
                             laneIndex={laneIndex}
                             laneName={laneName}
-                            racers={racers}
                             visibleStartPosition={visibleStartPosition}
                         />
                     ))}
+
+                    <RacerLayer
+                        racers={racers}
+                        activeEvent={activeEvent}
+                        activeCardOwner={activeCardOwner}
+                    />
                 </div>
             </div>
         </section>
