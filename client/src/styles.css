@@ -393,26 +393,78 @@ input {
   font-size: 12px;
 }
 
-.doubleBetChoices {
+.doubleBetFullChoices {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 18px;
+}
+
+.finalResultCard {
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+    gap: 16px;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    padding: 14px;
+    background: #0f172a;
+}
+
+.finalResultRanking {
+    display: flex;
+    align-items: center;
     gap: 12px;
 }
 
-.doubleBetChoice {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    border: 2px solid transparent;
-    padding: 7px;
-    background: #0f172a;
-    color: #f8fafc;
+    .finalResultRanking > span {
+        color: #facc15;
+        font-size: 28px;
+        font-weight: 900;
+    }
+
+    .finalResultRanking > div {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .finalResultRanking strong {
+        font-size: 18px;
+    }
+
+.finalResultMoney {
+    color: #86efac;
+    font-size: 16px;
+    font-weight: 900;
 }
 
-    .doubleBetChoice:hover {
-        border-color: #facc15;
+.lifeOutcome {
+    border-left: 2px solid #475569;
+    padding-left: 16px;
+}
+
+    .lifeOutcome strong {
+        color: #facc15;
     }
+
+    .lifeOutcome p {
+        margin: 6px 0 0;
+        color: #e2e8f0;
+        line-height: 1.45;
+    }
+
+@media (max-width: 700px) {
+    .finalResultCard {
+        grid-template-columns: 1fr;
+    }
+
+    .lifeOutcome {
+        border-top: 2px solid #475569;
+        border-left: 0;
+        padding-top: 12px;
+        padding-left: 0;
+    }
+}
 
 .log {
     max-height: 360px;

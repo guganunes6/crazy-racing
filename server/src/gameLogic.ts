@@ -11,10 +11,11 @@ import {
     type DraftedBetTicket,
     type PodiumEntry,
     type RaceCard,
+    type RaceEvent,
+    type RacePayoutSummary,
     type RacerState,
     type SideBetDefinition,
-    type TicketStackState,
-    type RaceEvent
+    type TicketStackState
 } from "@crazy-racing/shared";
 import { nanoid } from "nanoid";
 
@@ -27,6 +28,7 @@ import {
 import { RaceEngine } from "./engine/RaceEngine.js";
 import { reshuffleRaceDeck } from "./engine/Reshuffle.js";
 import { startBettingDraft } from "./betting/BettingDraft.js";
+import { processRacePayouts } from "./betting/PayoutEngine.js";
 import { createTicketStacks } from "./betting/TicketStacks.js";
 
 export type GamePhase =
@@ -69,6 +71,10 @@ export type Room = {
     raceLog: string[];
     raceEvents: RaceEvent[];
     nextRaceEventSequence: number;
+
+    racePayoutProcessed: boolean;
+    payoutSummary: RacePayoutSummary | null;
+
     currentCard: RaceCard | null;
     deck: RaceCard[];
     discard: RaceCard[];
@@ -109,6 +115,10 @@ export function createRoom(
         raceLog: [],
         raceEvents: [],
         nextRaceEventSequence: 1,
+
+        racePayoutProcessed: false,
+        payoutSummary: null,
+
         currentCard: null,
         deck: [],
         discard: [],
@@ -347,22 +357,36 @@ export function stepRace(
     const engine =
         new RaceEngine(room);
 
-    return engine.playNextCard();
+    const card =
+        engine.playNextCard();
+
+    processPayoutsIfRaceEnded(room);
+
+    return card;
 }
 
 export function reshuffleRace(
     room: Room
 ): void {
     reshuffleRaceDeck(room);
+
+    processPayoutsIfRaceEnded(room);
 }
 
 export function finishPayouts(
     room: Room
 ): void {
-    /*
-     * Actual betting payout evaluation will be
-     * implemented with the race-event tracker.
-     */
+    if (
+        room.phase !== "payouts"
+    ) {
+        throw new Error(
+            "The race is not in the payout phase."
+        );
+    }
+
+    if (!room.racePayoutProcessed) {
+        processRacePayouts(room);
+    }
 
     if (room.raceNumber >= 3) {
         room.phase = "final";
@@ -481,6 +505,10 @@ export function restartGame(
     room.raceLog = [];
     room.raceEvents = [];
     room.nextRaceEventSequence = 1;
+
+    room.racePayoutProcessed = false;
+    room.payoutSummary = null;
+
     room.currentCard = null;
     room.deck = [];
     room.discard = [];
@@ -574,6 +602,10 @@ function resetRaceBoardState(
     room.raceLog = [];
     room.raceEvents = [];
     room.nextRaceEventSequence = 1;
+
+    room.racePayoutProcessed = false;
+    room.payoutSummary = null;
+
     room.currentCard = null;
 
     /*
@@ -717,4 +749,15 @@ function drawRandomSideBet(
     }
 
     return selectedSideBet;
+}
+
+function processPayoutsIfRaceEnded(
+    room: Room
+): void {
+    if (
+        room.phase === "payouts" &&
+        !room.racePayoutProcessed
+    ) {
+        processRacePayouts(room);
+    }
 }

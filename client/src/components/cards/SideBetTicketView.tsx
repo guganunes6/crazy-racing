@@ -14,6 +14,7 @@ type SideBetTicketViewProps = {
     tier: BetTicketTier;
     selectedSide?: BetRiskSide | null;
     disabled?: boolean;
+    interactiveSides?: boolean;
     onSelectSide?: (side: BetRiskSide) => void;
 };
 
@@ -23,6 +24,7 @@ export function SideBetTicketView({
     tier,
     selectedSide = null,
     disabled = false,
+    interactiveSides = true,
     onSelectSide
 }: SideBetTicketViewProps) {
     const safeTicket = createSideBetTicket(answer, tier, "safe");
@@ -42,6 +44,7 @@ export function SideBetTicketView({
                     label="SAFE"
                     selected={selectedSide === "safe"}
                     disabled={disabled}
+                    interactive={interactiveSides}
                     onClick={() => onSelectSide?.("safe")}
                 >
                     <SidePayoutTable ticket={safeTicket} />
@@ -51,6 +54,7 @@ export function SideBetTicketView({
                     label="RISKY"
                     selected={selectedSide === "risky"}
                     disabled={disabled}
+                    interactive={interactiveSides}
                     onClick={() => onSelectSide?.("risky")}
                 >
                     <SidePayoutTable ticket={riskyTicket} />
@@ -87,6 +91,7 @@ type TicketSideButtonProps = {
     label: string;
     selected: boolean;
     disabled: boolean;
+    interactive: boolean;
     onClick: () => void;
     children: React.ReactNode;
 };
@@ -95,17 +100,41 @@ function TicketSideButton({
     label,
     selected,
     disabled,
+    interactive,
     onClick,
     children
 }: TicketSideButtonProps) {
+    const className = [
+        "ticketSide",
+        selected ? "ticketSideSelected" : "",
+        !interactive ? "ticketSideStatic" : ""
+    ]
+        .filter(Boolean)
+        .join(" ");
+
+    if (!interactive) {
+        return (
+            <div className={className}>
+                <span className="ticketSideLabel">
+                    {label}
+                </span>
+
+                {children}
+            </div>
+        );
+    }
+
     return (
         <button
             type="button"
-            className={`ticketSide ${selected ? "ticketSideSelected" : ""}`}
+            className={className}
             disabled={disabled}
             onClick={onClick}
         >
-            <span className="ticketSideLabel">{label}</span>
+            <span className="ticketSideLabel">
+                {label}
+            </span>
+
             {children}
         </button>
     );

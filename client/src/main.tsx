@@ -5,19 +5,23 @@ import React, {
 } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
-import type {
-    BetRiskSide,
-    DraftedBetTicket,
-    RaceCard,
-    TicketStackKey
+import {
+    getLifeOutcome,
+    type BetRiskSide,
+    type DraftedBetTicket,
+    type RaceCard,
+    type TicketStackKey
 } from "@crazy-racing/shared";
 
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
 import { BettingPhase } from "./components/betting/BettingPhase";
 import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
+import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
 import { DraftedTicketIcon } from "./components/betting/DraftedTicketIcon";
+import { PayoutSummary } from "./components/betting/PayoutSummary";
 import { PrivateHand } from "./components/cards/PrivateHand";
+import { PublicRaceDeck } from "./components/cards/PublicRaceDeck";
 
 import "./styles.css";
 
@@ -64,6 +68,11 @@ function App() {
     const [roomCodeInput, setRoomCodeInput] = useState("");
     const [error, setError] = useState("");
     const [selectedCards, setSelectedCards] = useState<string[]>([]);
+
+    const [
+        selectedDoubledTicketId,
+        setSelectedDoubledTicketId
+    ] = useState<string | null>(null);
 
     useEffect(() => {
         function handleRoomUpdate(updatedRoom: any) {
@@ -644,99 +653,109 @@ function App() {
                         />
                     )}
 
-                    {room.phase ===
-                        "double-bet" && (
-                            <section className="doubleBetPhase">
-                                <h3>
-                                    Choose one betting ticket
-                                    to double
-                                </h3>
+                    {room.phase === "double-bet" && (
+                        <section className="doubleBetPhase">
+                            <h3>
+                                Choose one betting ticket to double
+                            </h3>
 
-                                <p>
-                                    This ticket's positive or
-                                    negative payout will be
-                                    multiplied by two.
+                            <p>
+                                The selected ticket's positive or negative
+                                payout will be multiplied by two.
+                            </p>
+
+                            {me?.doubledTicketId ? (
+                                <p className="phaseConfirmation">
+                                    Your doubled betting ticket is confirmed.
                                 </p>
-
-                                {me?.doubledTicketId ? (
-                                    <p className="phaseConfirmation">
-                                        Your doubled betting ticket
-                                        is confirmed.
-                                    </p>
-                                ) : (
-                                    <div className="doubleBetChoices">
+                            ) : (
+                                <>
+                                    <div className="doubleBetFullChoices">
                                         {me?.draftedTickets.map(
-                                            (
-                                                ticket:
-                                                    DraftedBetTicket
-                                            ) => (
-                                                <button
-                                                    type="button"
+                                            (ticket: DraftedBetTicket) => (
+                                                <DraftedTicketChoice
                                                     key={ticket.id}
-                                                    className="doubleBetChoice"
-                                                    onClick={() =>
-                                                        confirmDoubledTicket(
+                                                    ticket={ticket}
+                                                    currentSideBet={
+                                                        room.currentSideBet
+                                                    }
+                                                    selected={
+                                                        selectedDoubledTicketId ===
+                                                        ticket.id
+                                                    }
+                                                    onSelect={() =>
+                                                        setSelectedDoubledTicketId(
                                                             ticket.id
                                                         )
                                                     }
-                                                >
-                                                    <DraftedTicketIcon
-                                                        ticket={ticket}
-                                                    />
-
-                                                    <span>
-                                                        Select for x2
-                                                    </span>
-                                                </button>
+                                                />
                                             )
                                         )}
                                     </div>
-                                )}
-                            </section>
-                        )}
 
-                    {room.phase ===
-                        "secret-card" && (
-                            <section className="secretCardPhase">
-                                <PrivateHand
-                                    cards={
-                                        privateState.hand
-                                    }
-                                    selectedCardIds={
-                                        selectedCards
-                                    }
-                                    selectable={
-                                        !me?.secretCardsSubmitted
-                                    }
-                                    disabled={Boolean(
-                                        me?.secretCardsSubmitted
-                                    )}
-                                    onToggleCard={
-                                        toggleCard
-                                    }
-                                />
-
-                                {!me?.secretCardsSubmitted && (
                                     <button
                                         type="button"
-                                        onClick={
-                                            submitSecretCards
+                                        disabled={
+                                            selectedDoubledTicketId === null
                                         }
-                                    >
-                                        Confirm secret card(s)
-                                    </button>
-                                )}
+                                        onClick={() => {
+                                            if (
+                                                selectedDoubledTicketId === null
+                                            ) {
+                                                return;
+                                            }
 
-                                {me?.secretCardsSubmitted && (
-                                    <p className="phaseConfirmation">
-                                        Your secret-card
-                                        selection has been
-                                        submitted. Waiting for
-                                        the other players.
-                                    </p>
+                                            confirmDoubledTicket(
+                                                selectedDoubledTicketId
+                                            );
+
+                                            setSelectedDoubledTicketId(null);
+                                        }}
+                                    >
+                                        Confirm x2 betting ticket
+                                    </button>
+                                </>
+                            )}
+                        </section>
+                    )}
+
+                    {room.phase === "secret-card" && (
+                        <section className="secretCardPhase">
+                            <PublicRaceDeck
+                                definitionIds={
+                                    room.publicRaceDeckDefinitionIds
+                                }
+                            />
+
+                            <PrivateHand
+                                cards={privateState.hand}
+                                selectedCardIds={selectedCards}
+                                selectable={
+                                    !me?.secretCardsSubmitted
+                                }
+                                disabled={Boolean(
+                                    me?.secretCardsSubmitted
                                 )}
-                            </section>
-                        )}
+                                onToggleCard={toggleCard}
+                            />
+
+                            {!me?.secretCardsSubmitted && (
+                                <button
+                                    type="button"
+                                    onClick={submitSecretCards}
+                                >
+                                    Confirm secret card(s)
+                                </button>
+                            )}
+
+                            {me?.secretCardsSubmitted && (
+                                <p className="phaseConfirmation">
+                                    Your secret-card selection has been submitted.
+                                    Waiting for the other players.
+                                </p>
+                            )}
+                        </section>
+                    )}
 
                     {room.phase ===
                         "ready-to-race" && (
@@ -822,22 +841,32 @@ function App() {
 
                     {room.phase === "payouts" && (
                         <section className="payoutPhase">
-                            <h3>Race finished</h3>
+                            {room.payoutSummary ? (
+                                <PayoutSummary
+                                    summary={room.payoutSummary}
+                                    currentPlayerId={socket.id}
+                                />
+                            ) : (
+                                <p>
+                                    Calculating race payouts...
+                                </p>
+                            )}
 
-                            <p>
-                                The race results and betting
-                                payouts are being processed.
-                            </p>
-
-                            {isHost && (
+                            {isHost && room.payoutSummary && (
                                 <button
                                     type="button"
-                                    onClick={
-                                        continueAfterPayouts
-                                    }
+                                    onClick={continueAfterPayouts}
                                 >
-                                    Continue
+                                    {room.raceNumber >= 3
+                                        ? "Show final ranking"
+                                        : "Continue to next race"}
                                 </button>
+                            )}
+
+                            {!isHost && (
+                                <p className="hostControlMessage">
+                                    Waiting for the room host to continue.
+                                </p>
                             )}
                         </section>
                     )}
@@ -859,21 +888,45 @@ function App() {
                                     (
                                         player: any,
                                         index: number
-                                    ) => (
-                                        <div
-                                            className="result"
-                                            key={player.id}
-                                        >
-                                            <span>
-                                                #{index + 1}{" "}
-                                                {player.name}
-                                            </span>
+                                    ) => {
+                                        const lifeOutcome =
+                                            getLifeOutcome(
+                                                player.money
+                                            );
 
-                                            <strong>
-                                                ${player.money}
-                                            </strong>
-                                        </div>
-                                    )
+                                        return (
+                                            <article
+                                                className="finalResultCard"
+                                                key={player.id}
+                                            >
+                                                <div className="finalResultRanking">
+                                                    <span>
+                                                        #{index + 1}
+                                                    </span>
+
+                                                    <div>
+                                                        <strong>
+                                                            {player.name}
+                                                        </strong>
+
+                                                        <span className="finalResultMoney">
+                                                            ${player.money}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="lifeOutcome">
+                                                    <strong>
+                                                        Life outcome {lifeOutcome.amountLabel}
+                                                    </strong>
+
+                                                    <p>
+                                                        {lifeOutcome.text}
+                                                    </p>
+                                                </div>
+                                            </article>
+                                        );
+                                    }
                                 )}
 
                             <div className="raceAgainControls">

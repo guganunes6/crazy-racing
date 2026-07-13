@@ -21,3 +21,7 @@ export * from "./types/Betting";
 export * from "./types/PublicGameState";
 
 export * from "./types/RaceEvent";
+
+export * from "./types/Payout";
+
+export * from "./life/LifeOutcomes";

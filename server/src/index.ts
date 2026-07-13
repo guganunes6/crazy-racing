@@ -186,6 +186,9 @@ function publicRoom(
         podium:
             room.podium,
 
+        payoutSummary:
+            room.payoutSummary,
+
         raceLog:
             room.raceLog,
 

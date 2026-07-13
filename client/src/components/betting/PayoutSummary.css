@@ -1,0 +1,136 @@
+.payoutSummary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.payoutSummaryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+    .payoutSummaryHeader span {
+        color: #94a3b8;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .payoutSummaryHeader h3 {
+        margin: 4px 0 0;
+        color: #facc15;
+    }
+
+.sideBetResult {
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+}
+
+.sideBetResultYes {
+    background: #15803d;
+}
+
+.sideBetResultNo {
+    background: #b91c1c;
+}
+
+.payoutSideBetQuestion {
+    margin: 0;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 14px;
+    background: #0f172a;
+    line-height: 1.4;
+}
+
+.playerPayoutList {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.playerPayoutCard {
+    overflow: hidden;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    background: #0f172a;
+}
+
+.playerPayoutCardMe {
+    border-color: #facc15;
+}
+
+.playerPayoutCard > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #1e293b;
+}
+
+.moneyProgression {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    color: #cbd5e1;
+    font-size: 13px;
+}
+
+.ticketPayoutList {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0 10px 10px;
+}
+
+.ticketPayoutRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+    .ticketPayoutRow > div {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .ticketPayoutRow span {
+        font-size: 11px;
+        color: #cbd5e1;
+    }
+
+.ticketPayoutCorrect {
+    background: rgba(34, 197, 94, 0.12);
+}
+
+.ticketPayoutIncorrect {
+    background: rgba(239, 68, 68, 0.12);
+}
+
+.positivePayout {
+    color: #86efac;
+}
+
+.negativePayout {
+    color: #fca5a5;
+}
+
+@media (max-width: 650px) {
+    .payoutSummaryHeader {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .moneyProgression {
+        flex-direction: column;
+    }
+}

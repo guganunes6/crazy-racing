@@ -110,7 +110,7 @@
     transition: border-color 180ms ease, transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
 }
 
-    .ticketSide:hover:not(:disabled) {
+    button.ticketSide:hover:not(:disabled) {
         border-color: #94a3b8;
         transform: translateY(-2px);
     }
@@ -130,6 +130,20 @@
     font-weight: 900;
     letter-spacing: 0.12em;
 }
+
+.ticketSideStatic {
+    cursor: inherit;
+    pointer-events: none;
+}
+
+    .ticketSideStatic:hover {
+        border-color: transparent;
+        transform: none;
+    }
+
+    .ticketSideStatic.ticketSideSelected {
+        border-color: #facc15;
+    }
 
 .payoutTable,
 .sidePayoutTable {
