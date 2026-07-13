@@ -23,7 +23,8 @@ import {
     createCompleteCardSupply,
     createInitialRaceDeck,
     drawRandomCardFromSupply,
-    prepareDeckForRace
+    prepareDeckForRace,
+    shuffle
 } from "./engine/Deck.js";
 import { RaceEngine } from "./engine/RaceEngine.js";
 import { reshuffleRaceDeck } from "./engine/Reshuffle.js";
@@ -376,9 +377,7 @@ export function reshuffleRace(
 export function finishPayouts(
     room: Room
 ): void {
-    if (
-        room.phase !== "payouts"
-    ) {
+    if (room.phase !== "payouts") {
         throw new Error(
             "The race is not in the payout phase."
         );
@@ -394,12 +393,10 @@ export function finishPayouts(
     }
 
     /*
-     * Restore the complete racing deck from the
-     * cards that were not drawn and all discarded
-     * cards, including the three initial burned cards.
+     * Restore every physical card that formed the race deck:
      *
-     * Example with 3 players after Race 1:
-     * 18 total cards are restored here.
+     * - room.deck contains cards that were not drawn;
+     * - room.discard contains drawn cards and all burned cards.
      */
     room.deck = [
         ...room.deck,
@@ -409,14 +406,18 @@ export function finishPayouts(
     room.discard = [];
     room.currentCard = null;
 
+    /*
+     * The replacement private cards for the next race are
+     * dealt from this existing racing deck.
+     */
+    shuffle(room.deck);
+
     room.raceNumber += 1;
 
     room.draftStartingPlayerIndex =
         (
-            room.draftStartingPlayerIndex +
-            1
-        ) %
-        room.players.length;
+            room.draftStartingPlayerIndex + 1
+        ) % room.players.length;
 
     setupFollowingRace(room);
 }
@@ -568,24 +569,57 @@ function setupFollowingRace(
     room: Room
 ): void {
     /*
-     * Do not replace room.deck here.
-     *
-     * It already contains the complete card pool
-     * recovered from the previous race.
+     * Keep the complete racing deck recovered from the
+     * previous race. Do not create a new deck and do not
+     * draw replacement cards from availableCards.
      */
     resetRaceBoardState(room);
 
+    const cardsPerPlayer =
+        room.players.length === 2
+            ? SECRET_CARDS_TWO_PLAYERS
+            : SECRET_CARDS_OTHER;
+
+    const requiredCardCount =
+        room.players.length * cardsPerPlayer;
+
+    if (room.deck.length < requiredCardCount) {
+        throw new Error(
+            `Cannot deal ${requiredCardCount} replacement card(s). ` +
+            `The racing deck only contains ${room.deck.length}.`
+        );
+    }
+
     /*
-     * Every player draws one new private card.
-     * The card they select later will be added to
-     * the existing racing deck.
+     * Deal replacement cards from the current racing deck.
+     *
+     * Standard games:
+     * - each player submitted 1 card;
+     * - each player now receives 1 card.
+     *
+     * Two-player games:
+     * - each player submitted 2 cards;
+     * - each player now receives 2 cards.
      */
     for (const player of room.players) {
-        player.hand.push(
-            drawRandomCardFromSupply(
-                room.availableCards
-            )
-        );
+        for (
+            let cardIndex = 0;
+            cardIndex < cardsPerPlayer;
+            cardIndex++
+        ) {
+            const replacementCard =
+                room.deck.shift();
+
+            if (!replacementCard) {
+                throw new Error(
+                    `Unable to deal a replacement card to ${player.name}.`
+                );
+            }
+
+            player.hand.push(
+                replacementCard
+            );
+        }
     }
 
     preparePreRaceDraft(room);
@@ -632,8 +666,7 @@ function fillInitialPlayerHands(
 
     for (const player of room.players) {
         while (
-            player.hand.length <
-            handSize
+            player.hand.length < handSize
         ) {
             player.hand.push(
                 drawRandomCardFromSupply(
