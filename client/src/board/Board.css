@@ -364,6 +364,10 @@
     animation: greenCardAffectedGlow 520ms ease-in-out;
 }
 
+.racerCardAffected {
+    filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
+}
+
 .racerAnimatingCrawl .mascot {
     animation: mascotCrawl 420ms ease-in-out;
 }

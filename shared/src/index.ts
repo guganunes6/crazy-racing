@@ -24,4 +24,6 @@ export * from "./types/RaceEvent";
 
 export * from "./types/Payout";
 
+export * from "./types/Replay";
+
 export * from "./life/LifeOutcomes";

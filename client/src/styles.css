@@ -393,11 +393,109 @@ input {
   font-size: 12px;
 }
 
+.replayRaceButton {
+    align-self: center;
+    background: #38bdf8;
+    color: #082f49;
+}
+
 .doubleBetFullChoices {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
     gap: 18px;
+}
+
+.finalReplayHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
+    border: 2px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    background: #0f172a;
+}
+
+.finalReplayHistoryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+    .finalReplayHistoryHeader span {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .finalReplayHistoryHeader h3 {
+        margin: 4px 0 0;
+        color: #facc15;
+    }
+
+    .finalReplayHistoryHeader p {
+        max-width: 320px;
+        margin: 0;
+        color: #cbd5e1;
+        line-height: 1.4;
+        text-align: right;
+    }
+
+.finalReplayButtons {
+    display: grid;
+    grid-template-columns: repeat( auto-fit, minmax(150px, 1fr) );
+    gap: 12px;
+}
+
+.finalReplayButton {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin: 0;
+    border: 2px solid #475569;
+    padding: 14px;
+    background: #1e293b;
+    color: #f8fafc;
+    text-align: left;
+}
+
+    .finalReplayButton:hover:not(:disabled) {
+        border-color: #38bdf8;
+        background: #0c4a6e;
+    }
+
+    .finalReplayButton span {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .finalReplayButton strong {
+        color: #f8fafc;
+        font-size: 16px;
+    }
+
+.finalReplayUnavailable {
+    margin: 0;
+    color: #94a3b8;
+}
+
+@media (max-width: 700px) {
+    .finalReplayHistoryHeader {
+        flex-direction: column;
+    }
+
+        .finalReplayHistoryHeader p {
+            max-width: none;
+            text-align: left;
+        }
 }
 
 .finalResultCard {

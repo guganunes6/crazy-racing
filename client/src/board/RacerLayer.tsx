@@ -1,22 +1,30 @@
 import type {
     CSSProperties
 } from "react";
+
 import type {
     RaceEvent,
     RacerName
 } from "@crazy-racing/shared";
+
 import type {
     RacerOnBoard
 } from "./BoardModel";
+
 import { Mascot } from "./Mascot";
 
 type CardOwner =
-    RacerName | "GREEN";
+    | RacerName
+    | "GREEN";
 
 type RacerLayerProps = {
     racers: RacerOnBoard[];
-    activeEvent?: RaceEvent | null;
-    activeCardOwner?: CardOwner | null;
+
+    activeEvent?:
+    RaceEvent | null;
+
+    activeCardOwner?:
+    CardOwner | null;
 };
 
 type PositionedRacer =
@@ -52,8 +60,10 @@ export function RacerLayer({
 
                 return {
                     ...racer,
+
                     countInSpace:
                         sameSpace.length,
+
                     indexInSpace:
                         sameSpace.findIndex(
                             (candidate) =>
@@ -77,11 +87,22 @@ export function RacerLayer({
                             racer.name
                         );
 
-                    const greenCardClass =
+                    const affectedByGreenCard =
                         activeCardOwner ===
-                            "GREEN"
+                        "GREEN";
+
+                    const affectedByMascotCard =
+                        activeCardOwner ===
+                        racer.name;
+
+                    const glowClass =
+                        affectedByGreenCard
                             ? "racerGreenAffected"
-                            : "";
+                            : (
+                                affectedByMascotCard
+                                    ? "racerCardAffected"
+                                    : ""
+                            );
 
                     return (
                         <div
@@ -89,7 +110,7 @@ export function RacerLayer({
                             className={[
                                 "racerToken",
                                 eventClass,
-                                greenCardClass
+                                glowClass
                             ]
                                 .filter(Boolean)
                                 .join(" ")}
@@ -97,6 +118,7 @@ export function RacerLayer({
                                 {
                                     "--racer-position":
                                         racer.position,
+
                                     "--racer-lane":
                                         racer.lane
                                 } as CSSProperties

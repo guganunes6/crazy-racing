@@ -8,6 +8,7 @@ import { io } from "socket.io-client";
 import {
     getLifeOutcome,
     type BetRiskSide,
+    type CompletedRaceReplay,
     type DraftedBetTicket,
     type RaceCard,
     type RaceEvent,
@@ -24,6 +25,7 @@ import { DraftedTicketIcon } from "./components/betting/DraftedTicketIcon";
 import { PayoutSummary } from "./components/betting/PayoutSummary";
 import { PrivateHand } from "./components/cards/PrivateHand";
 import { PublicRaceDeck } from "./components/cards/PublicRaceDeck";
+import { RaceReplay } from "./components/replay/RaceReplay";
 import { useRaceAnimation } from "./animation/useRaceAnimation";
 
 import "./styles.css";
@@ -76,6 +78,11 @@ function App() {
         selectedDoubledTicketId,
         setSelectedDoubledTicketId
     ] = useState<string | null>(null);
+
+    const [
+        activeReplay,
+        setActiveReplay
+    ] = useState<CompletedRaceReplay | null>(null);
 
     useEffect(() => {
         function handleRoomUpdate(updatedRoom: any) {
@@ -130,6 +137,19 @@ function App() {
         };
     }, []);
 
+    useEffect(() => {
+        if (
+            activeReplay &&
+            room?.phase !== "payouts" &&
+            room?.phase !== "final"
+        ) {
+            setActiveReplay(null);
+        }
+    }, [
+        activeReplay,
+        room?.phase
+    ]);
+
     const me = useMemo(() => {
         return room?.players.find(
             (player: any) => player.id === socket.id
@@ -151,6 +171,25 @@ function App() {
             ) ?? null
         );
     }, [room]);
+
+    const currentRaceReplay =
+        useMemo(() => {
+            const replays:
+                CompletedRaceReplay[] =
+                room?.completedRaceReplays ??
+                [];
+
+            return (
+                replays.find(
+                    (replay) =>
+                        replay.raceNumber ===
+                        room?.raceNumber
+                ) ?? null
+            );
+        }, [
+            room?.completedRaceReplays,
+            room?.raceNumber
+        ]);
 
     const isHost =
         room?.hostSocketId === socket.id;
@@ -863,147 +902,264 @@ function App() {
 
                     {room.phase === "payouts" && (
                         <section className="payoutPhase">
-                            {room.payoutSummary ? (
-                                <PayoutSummary
-                                    summary={room.payoutSummary}
-                                    currentPlayerId={socket.id}
+                            {activeReplay ? (
+                                <RaceReplay
+                                    replay={activeReplay}
+                                    onExit={() =>
+                                        setActiveReplay(
+                                            null
+                                        )
+                                    }
                                 />
                             ) : (
-                                <p>
-                                    Calculating race payouts...
-                                </p>
-                            )}
+                                <>
+                                    {room.payoutSummary ? (
+                                        <PayoutSummary
+                                            summary={
+                                                room.payoutSummary
+                                            }
+                                            currentPlayerId={
+                                                socket.id
+                                            }
+                                        />
+                                    ) : (
+                                        <p>
+                                            Calculating race payouts...
+                                        </p>
+                                    )}
 
-                            {isHost && room.payoutSummary && (
-                                <button
-                                    type="button"
-                                    onClick={continueAfterPayouts}
-                                >
-                                    {room.raceNumber >= 3
-                                        ? "Show final ranking"
-                                        : "Continue to next race"}
-                                </button>
-                            )}
+                                        {currentRaceReplay && (
+                                            <button
+                                                type="button"
+                                                className="replayRaceButton"
+                                                onClick={() =>
+                                                    setActiveReplay(
+                                                        currentRaceReplay
+                                                    )
+                                                }
+                                            >
+                                                Replay race
+                                            </button>
+                                        )}
 
-                            {!isHost && (
-                                <p className="hostControlMessage">
-                                    Waiting for the room host to continue.
-                                </p>
+                                    {isHost &&
+                                        room.payoutSummary && (
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    continueAfterPayouts
+                                                }
+                                            >
+                                                {room.raceNumber >= 3
+                                                    ? "Show final ranking"
+                                                    : "Continue to next race"}
+                                            </button>
+                                        )}
+
+                                    {!isHost && (
+                                        <p className="hostControlMessage">
+                                            Waiting for the room host
+                                            to continue.
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </section>
                     )}
 
                     {room.phase === "final" && (
                         <section className="finalPhase">
-                            <h3>Final Results</h3>
-
-                            {[...room.players]
-                                .sort(
-                                    (
-                                        first: any,
-                                        second: any
-                                    ) =>
-                                        second.money -
-                                        first.money
-                                )
-                                .map(
-                                    (
-                                        player: any,
-                                        index: number
-                                    ) => {
-                                        const lifeOutcome =
-                                            getLifeOutcome(
-                                                player.money
-                                            );
-
-                                        return (
-                                            <article
-                                                className="finalResultCard"
-                                                key={player.id}
-                                            >
-                                                <div className="finalResultRanking">
-                                                    <span>
-                                                        #{index + 1}
-                                                    </span>
-
-                                                    <div>
-                                                        <strong>
-                                                            {player.name}
-                                                        </strong>
-
-                                                        <span className="finalResultMoney">
-                                                            ${player.money}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="lifeOutcome">
-                                                    <strong>
-                                                        Life outcome {lifeOutcome.amountLabel}
-                                                    </strong>
-
-                                                    <p>
-                                                        {lifeOutcome.text}
-                                                    </p>
-                                                </div>
-                                            </article>
-                                        );
+                            {activeReplay ? (
+                                <RaceReplay
+                                    replay={activeReplay}
+                                    onExit={() =>
+                                        setActiveReplay(null)
                                     }
-                                )}
+                                />
+                            ) : (
+                                <>
+                                    <h3>Final Results</h3>
 
-                            <div className="raceAgainControls">
-                                <button
-                                    type="button"
-                                    onClick={
-                                        selectRaceAgain
-                                    }
-                                    disabled={Boolean(
-                                        me?.raceAgain
-                                    )}
-                                >
-                                    {me?.raceAgain
-                                        ? "Race again selected"
-                                        : "Race again!"}
-                                </button>
-
-                                {isHost && (
-                                    <button
-                                        type="button"
-                                        className="restartGameButton"
-                                        onClick={
-                                            restartGame
-                                        }
-                                        disabled={
-                                            !room.canRestartGame
-                                        }
-                                    >
-                                        Restart game
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="raceAgainPlayers">
-                                <strong>
-                                    Players racing again:
-                                </strong>
-
-                                {room.players
-                                    .filter(
-                                        (player: any) =>
-                                            player.id ===
-                                            room.hostSocketId ||
-                                            player.raceAgain
-                                    )
-                                    .map(
-                                        (player: any) => (
-                                            <span
-                                                key={player.id}
-                                            >
-                                                {player.name}
-                                            </span>
+                                    {[...room.players]
+                                        .sort(
+                                            (
+                                                first: any,
+                                                second: any
+                                            ) =>
+                                                second.money -
+                                                first.money
                                         )
-                                    )}
-                            </div>
+                                        .map(
+                                            (
+                                                player: any,
+                                                index: number
+                                            ) => {
+                                                const lifeOutcome =
+                                                    getLifeOutcome(
+                                                        player.money
+                                                    );
+
+                                                return (
+                                                    <article
+                                                        className="finalResultCard"
+                                                        key={player.id}
+                                                    >
+                                                        <div className="finalResultRanking">
+                                                            <span>
+                                                                #{index + 1}
+                                                            </span>
+
+                                                            <div>
+                                                                <strong>
+                                                                    {player.name}
+                                                                </strong>
+
+                                                                <span className="finalResultMoney">
+                                                                    ${player.money}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="lifeOutcome">
+                                                            <strong>
+                                                                Life outcome{" "}
+                                                                {lifeOutcome.amountLabel}
+                                                            </strong>
+
+                                                            <p>
+                                                                {lifeOutcome.text}
+                                                            </p>
+                                                        </div>
+                                                    </article>
+                                                );
+                                            }
+                                        )}
+
+                                    <section className="finalReplayHistory">
+                                        <div className="finalReplayHistoryHeader">
+                                            <div>
+                                                <span>
+                                                    Race history
+                                                </span>
+
+                                                <h3>
+                                                    Replay completed races
+                                                </h3>
+                                            </div>
+
+                                            <p>
+                                                Choose any race to replay it
+                                                independently.
+                                            </p>
+                                        </div>
+
+                                        <div className="finalReplayButtons">
+                                            {(
+                                                room.completedRaceReplays ??
+                                                []
+                                            )
+                                                .slice()
+                                                .sort(
+                                                    (
+                                                        first:
+                                                            CompletedRaceReplay,
+                                                        second:
+                                                            CompletedRaceReplay
+                                                    ) =>
+                                                        first.raceNumber -
+                                                        second.raceNumber
+                                                )
+                                                .map(
+                                                    (
+                                                        replay:
+                                                            CompletedRaceReplay
+                                                    ) => (
+                                                        <button
+                                                            type="button"
+                                                            key={
+                                                                replay.raceNumber
+                                                            }
+                                                            className="finalReplayButton"
+                                                            onClick={() =>
+                                                                setActiveReplay(
+                                                                    replay
+                                                                )
+                                                            }
+                                                        >
+                                                            <span>
+                                                                Race{" "}
+                                                                {replay.raceNumber}
+                                                            </span>
+
+                                                            <strong>
+                                                                Replay race
+                                                            </strong>
+                                                        </button>
+                                                    )
+                                                )}
+                                        </div>
+
+                                        {(
+                                            room.completedRaceReplays ??
+                                            []
+                                        ).length === 0 && (
+                                                <p className="finalReplayUnavailable">
+                                                    No race replays are available.
+                                                </p>
+                                            )}
+                                    </section>
+
+                                    <div className="raceAgainControls">
+                                        <button
+                                            type="button"
+                                            onClick={selectRaceAgain}
+                                            disabled={Boolean(
+                                                me?.raceAgain
+                                            )}
+                                        >
+                                            {me?.raceAgain
+                                                ? "Race again selected"
+                                                : "Race again!"}
+                                        </button>
+
+                                        {isHost && (
+                                            <button
+                                                type="button"
+                                                className="restartGameButton"
+                                                onClick={restartGame}
+                                                disabled={
+                                                    !room.canRestartGame
+                                                }
+                                            >
+                                                Restart game
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="raceAgainPlayers">
+                                        <strong>
+                                            Players racing again:
+                                        </strong>
+
+                                        {room.players
+                                            .filter(
+                                                (player: any) =>
+                                                    player.id ===
+                                                    room.hostSocketId ||
+                                                    player.raceAgain
+                                            )
+                                            .map(
+                                                (player: any) => (
+                                                    <span
+                                                        key={player.id}
+                                                    >
+                                                        {player.name}
+                                                    </span>
+                                                )
+                                            )}
+                                    </div>
+                                </>
+                            )}
                         </section>
                     )}
                 </section>

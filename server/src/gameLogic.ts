@@ -8,6 +8,7 @@ import {
     SECRET_CARDS_TWO_PLAYERS,
     SECRET_CARDS_OTHER,
     type BettingDraftState,
+    type CompletedRaceReplay,
     type DraftedBetTicket,
     type PodiumEntry,
     type RaceCard,
@@ -76,6 +77,8 @@ export type Room = {
     racePayoutProcessed: boolean;
     payoutSummary: RacePayoutSummary | null;
 
+    completedRaceReplays: CompletedRaceReplay[];
+
     currentCard: RaceCard | null;
     deck: RaceCard[];
     discard: RaceCard[];
@@ -119,6 +122,8 @@ export function createRoom(
 
         racePayoutProcessed: false,
         payoutSummary: null,
+
+        completedRaceReplays: [],
 
         currentCard: null,
         deck: [],
@@ -239,6 +244,8 @@ export function startGame(
 
     room.availableCards =
         createCompleteCardSupply();
+
+    room.completedRaceReplays = [];
 
     setupFirstRace(room);
 }
@@ -387,6 +394,8 @@ export function finishPayouts(
         processRacePayouts(room);
     }
 
+    archiveCompletedRaceReplay(room);
+
     if (room.raceNumber >= 3) {
         room.phase = "final";
         return;
@@ -509,6 +518,8 @@ export function restartGame(
 
     room.racePayoutProcessed = false;
     room.payoutSummary = null;
+
+    room.completedRaceReplays = [];
 
     room.currentCard = null;
     room.deck = [];
@@ -787,10 +798,123 @@ function drawRandomSideBet(
 function processPayoutsIfRaceEnded(
     room: Room
 ): void {
-    if (
-        room.phase === "payouts" &&
-        !room.racePayoutProcessed
-    ) {
+    if (room.phase !== "payouts") {
+        return;
+    }
+
+    if (!room.racePayoutProcessed) {
         processRacePayouts(room);
     }
+
+    archiveCompletedRaceReplay(room);
+}
+
+function archiveCompletedRaceReplay(
+    room: Room
+): void {
+    if (!room.payoutSummary) {
+        return;
+    }
+
+    const replayAlreadyExists =
+        room.completedRaceReplays.some(
+            (replay) =>
+                replay.raceNumber === room.raceNumber
+        );
+
+    if (replayAlreadyExists) {
+        return;
+    }
+
+    const replay: CompletedRaceReplay = {
+        raceNumber: room.raceNumber,
+
+        initialRacers:
+            createInitialRacers().map(
+                cloneRacerState
+            ),
+
+        events: room.raceEvents.map(
+            cloneRaceEvent
+        ),
+
+        podium: room.podium.map(
+            (entry) => ({
+                ...entry
+            })
+        ),
+
+        sideBet: {
+            ...room.currentSideBet
+        },
+
+        payoutSummary: {
+            ...room.payoutSummary,
+
+            playerPayouts:
+                room.payoutSummary.playerPayouts.map(
+                    (playerPayout) => ({
+                        ...playerPayout,
+
+                        tickets:
+                            playerPayout.tickets.map(
+                                (ticket) => ({
+                                    ...ticket
+                                })
+                            )
+                    })
+                )
+        }
+    };
+
+    room.completedRaceReplays.push(
+        replay
+    );
+}
+
+function cloneRacerState(
+    racer: RacerState
+): RacerState {
+    return {
+        ...racer
+    };
+}
+
+function cloneRaceEvent(
+    event: RaceEvent
+): RaceEvent {
+    if (event.type === "RACE_STATE") {
+        return {
+            ...event,
+            racers: event.racers.map(
+                (racer) => ({
+                    ...racer
+                })
+            )
+        };
+    }
+
+    if (event.type === "RACE_ENDED") {
+        return {
+            ...event,
+            podium: event.podium.map(
+                (entry) => ({
+                    ...entry
+                })
+            )
+        };
+    }
+
+    if (event.type === "TRACK_FOLDED") {
+        return {
+            ...event,
+            disqualifiedRacers: [
+                ...event.disqualifiedRacers
+            ]
+        };
+    }
+
+    return {
+        ...event
+    };
 }

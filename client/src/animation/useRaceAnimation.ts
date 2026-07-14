@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+    useEffect,
+    useRef,
+    useState
+} from "react";
+
 import type {
     RaceEvent,
     RacerName,
@@ -10,7 +15,9 @@ type RaceStateEvent = Extract<
     { type: "RACE_STATE" }
 >;
 
-type CardOwner = RacerName | "GREEN";
+type CardOwner =
+    | RacerName
+    | "GREEN";
 
 type AnimatedRaceStep = {
     snapshot: RaceStateEvent;
@@ -47,17 +54,31 @@ export function useRaceAnimation({
     raceNumber,
     enabled
 }: UseRaceAnimationOptions) {
-    const [visualRacers, setVisualRacers] =
-        useState<RacerState[]>(racers);
+    const [
+        visualRacers,
+        setVisualRacers
+    ] = useState<RacerState[]>(
+        racers
+    );
 
-    const [activeEvent, setActiveEvent] =
-        useState<RaceEvent | null>(null);
+    const [
+        activeEvent,
+        setActiveEvent
+    ] = useState<RaceEvent | null>(
+        null
+    );
 
-    const [activeCardOwner, setActiveCardOwner] =
-        useState<CardOwner | null>(null);
+    const [
+        activeCardOwner,
+        setActiveCardOwner
+    ] = useState<CardOwner | null>(
+        null
+    );
 
-    const [isAnimating, setIsAnimating] =
-        useState(false);
+    const [
+        isAnimating,
+        setIsAnimating
+    ] = useState(false);
 
     const queueRef =
         useRef<AnimatedRaceStep[]>([]);
@@ -73,6 +94,7 @@ export function useRaceAnimation({
 
     useEffect(() => {
         generationRef.current += 1;
+
         queueRef.current = [];
         processingRef.current = false;
         lastQueuedSequenceRef.current = 0;
@@ -230,12 +252,14 @@ function findTriggerEvent(
         index >= 0;
         index -= 1
     ) {
-        const event = events[index];
+        const event =
+            events[index];
 
         if (
             event.sequence <
             snapshotSequence &&
-            event.type !== "RACE_STATE"
+            event.type !==
+            "RACE_STATE"
         ) {
             return event;
         }
@@ -254,7 +278,8 @@ function findCardOwner(
         index >= 0;
         index -= 1
     ) {
-        const event = events[index];
+        const event =
+            events[index];
 
         if (
             event.sequence >=

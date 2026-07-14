@@ -1,0 +1,133 @@
+.raceReplay {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.raceReplayHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+    .raceReplayHeader span {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .raceReplayHeader h3 {
+        margin: 4px 0 0;
+        color: #facc15;
+    }
+
+.replayExitButton {
+    background: #334155;
+    color: #f8fafc;
+}
+
+.replayProgress {
+    align-self: flex-end;
+    border: 1px solid #334155;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: #0f172a;
+    color: #cbd5e1;
+    font-size: 13px;
+}
+
+    .replayProgress strong {
+        color: #facc15;
+    }
+
+.replayCurrentCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+    .replayCurrentCard h4 {
+        margin: 0;
+    }
+
+    .replayCurrentCard p {
+        color: #94a3b8;
+    }
+
+.replayControls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.replaySpeedControls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+    .replaySpeedControls > span {
+        margin-right: 8px;
+        color: #cbd5e1;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .replaySpeedControls button {
+        min-width: 52px;
+        background: #334155;
+        color: #f8fafc;
+    }
+
+    .replaySpeedControls .replaySpeedSelected {
+        background: #facc15;
+        color: #111827;
+    }
+
+.replayLog {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px;
+    background: #0f172a;
+}
+
+    .replayLog h4 {
+        margin: 0 0 8px;
+        color: #facc15;
+    }
+
+    .replayLog p {
+        margin: 0;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.7);
+        padding: 8px 4px;
+        color: #e2e8f0;
+        line-height: 1.35;
+    }
+
+        .replayLog p:last-child {
+            border-bottom: 0;
+        }
+
+@media (max-width: 700px) {
+    .raceReplayHeader {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .replayExitButton {
+        align-self: flex-start;
+    }
+
+    .replayProgress {
+        align-self: flex-start;
+    }
+}
