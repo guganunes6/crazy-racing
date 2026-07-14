@@ -12,7 +12,8 @@ import type {
     ReplaySpeed
 } from "./ReplayTypes";
 
-const BASE_FRAME_DURATION = 600;
+const BASE_FRAME_DURATION =
+    600;
 
 type UseRaceReplayOptions = {
     model: RaceReplayModel;
@@ -34,7 +35,9 @@ export function useRaceReplay({
     const [
         speed,
         setSpeed
-    ] = useState<ReplaySpeed>(1);
+    ] = useState<ReplaySpeed>(
+        1
+    );
 
     const [
         isPlaying,
@@ -42,7 +45,9 @@ export function useRaceReplay({
     ] = useState(false);
 
     const timerRef =
-        useRef<number | null>(null);
+        useRef<number | null>(
+            null
+        );
 
     const currentGroup =
         cardGroupIndex >= 0
@@ -54,37 +59,48 @@ export function useRaceReplay({
             : null;
 
     const currentFrame =
-        useMemo<ReplayFrame>(() => {
-            if (!currentGroup) {
-                return model.initialFrame;
-            }
+        useMemo<ReplayFrame>(
+            () => {
+                if (!currentGroup) {
+                    return (
+                        model.initialFrame
+                    );
+                }
 
-            return (
-                currentGroup.frames[
-                frameIndex
-                ] ??
-                currentGroup.frames[
-                currentGroup.frames.length - 1
-                ] ??
+                return (
+                    currentGroup.frames[
+                    frameIndex
+                    ] ??
+                    currentGroup.frames[
+                    currentGroup
+                        .frames
+                        .length - 1
+                    ] ??
+                    model.initialFrame
+                );
+            },
+            [
+                currentGroup,
+                frameIndex,
                 model.initialFrame
-            );
-        }, [
-            currentGroup,
-            frameIndex,
-            model.initialFrame
-        ]);
+            ]
+        );
 
     const visibleLogEntries =
         useMemo(() => {
-            if (cardGroupIndex < 0) {
+            if (
+                cardGroupIndex < 0
+            ) {
                 return [];
             }
 
-            const entries: string[] = [];
+            const entries:
+                string[] = [];
 
             for (
                 let groupIndex = 0;
-                groupIndex <= cardGroupIndex;
+                groupIndex <=
+                cardGroupIndex;
                 groupIndex += 1
             ) {
                 const group =
@@ -101,15 +117,18 @@ export function useRaceReplay({
                         cardGroupIndex
                         ? frameIndex
                         : (
-                            group.frames.length -
+                            group.frames
+                                .length -
                             1
                         );
 
                 for (
-                    let currentFrameIndex = 0;
+                    let currentFrameIndex =
+                        0;
                     currentFrameIndex <=
                     maximumFrameIndex;
-                    currentFrameIndex += 1
+                    currentFrameIndex +=
+                    1
                 ) {
                     const frame =
                         group.frames[
@@ -118,7 +137,8 @@ export function useRaceReplay({
 
                     if (frame) {
                         entries.push(
-                            ...frame.logEntries
+                            ...frame
+                                .logEntries
                         );
                     }
                 }
@@ -131,16 +151,42 @@ export function useRaceReplay({
             model.cardGroups
         ]);
 
+    const finalGroupIndex =
+        model.cardGroups.length -
+        1;
+
+    const finalGroup =
+        finalGroupIndex >= 0
+            ? model.cardGroups[
+            finalGroupIndex
+            ]
+            : null;
+
+    const finalFrameIndex =
+        finalGroup
+            ? finalGroup.frames
+                .length - 1
+            : -1;
+
+    const isReplayComplete =
+        finalGroupIndex >= 0 &&
+        cardGroupIndex ===
+        finalGroupIndex &&
+        frameIndex ===
+        finalFrameIndex;
+
     const clearTimer =
         useCallback(() => {
             if (
-                timerRef.current !== null
+                timerRef.current !==
+                null
             ) {
                 window.clearTimeout(
                     timerRef.current
                 );
 
-                timerRef.current = null;
+                timerRef.current =
+                    null;
             }
         }, []);
 
@@ -162,14 +208,18 @@ export function useRaceReplay({
     const moveToNextFrame =
         useCallback((): boolean => {
             if (
-                model.cardGroups.length === 0
+                model.cardGroups
+                    .length === 0
             ) {
                 return false;
             }
 
-            if (cardGroupIndex < 0) {
+            if (
+                cardGroupIndex < 0
+            ) {
                 setCardGroupIndex(0);
                 setFrameIndex(0);
+
                 return true;
             }
 
@@ -184,7 +234,8 @@ export function useRaceReplay({
 
             if (
                 frameIndex <
-                group.frames.length - 1
+                group.frames.length -
+                1
             ) {
                 setFrameIndex(
                     (current) =>
@@ -196,7 +247,9 @@ export function useRaceReplay({
 
             if (
                 cardGroupIndex <
-                model.cardGroups.length - 1
+                model.cardGroups
+                    .length -
+                1
             ) {
                 setCardGroupIndex(
                     (current) =>
@@ -204,6 +257,7 @@ export function useRaceReplay({
                 );
 
                 setFrameIndex(0);
+
                 return true;
             }
 
@@ -217,22 +271,38 @@ export function useRaceReplay({
     const play =
         useCallback(() => {
             if (
-                model.cardGroups.length === 0
+                model.cardGroups
+                    .length === 0
             ) {
                 return;
             }
 
+            /*
+             * Playing after completion starts
+             * the replay again.
+             */
+            if (isReplayComplete) {
+                setCardGroupIndex(-1);
+                setFrameIndex(0);
+            }
+
             setIsPlaying(true);
-        }, [model.cardGroups.length]);
+        }, [
+            isReplayComplete,
+            model.cardGroups.length
+        ]);
 
     const previousCard =
         useCallback(() => {
             clearTimer();
             setIsPlaying(false);
 
-            if (cardGroupIndex <= 0) {
+            if (
+                cardGroupIndex <= 0
+            ) {
                 setCardGroupIndex(-1);
                 setFrameIndex(0);
+
                 return;
             }
 
@@ -253,7 +323,8 @@ export function useRaceReplay({
                     0,
                     (
                         previousGroup
-                            ?.frames.length ??
+                            ?.frames
+                            .length ??
                         1
                     ) - 1
                 )
@@ -272,7 +343,10 @@ export function useRaceReplay({
             const nextIndex =
                 cardGroupIndex < 0
                     ? 0
-                    : cardGroupIndex + 1;
+                    : (
+                        cardGroupIndex +
+                        1
+                    );
 
             if (
                 nextIndex >=
@@ -295,7 +369,8 @@ export function useRaceReplay({
                     0,
                     (
                         nextGroup
-                            ?.frames.length ??
+                            ?.frames
+                            .length ??
                         1
                     ) - 1
                 )
@@ -362,9 +437,10 @@ export function useRaceReplay({
         setSpeed,
 
         isPlaying,
+        isReplayComplete,
+
         play,
         pause,
-
         restart,
         previousCard,
         nextCard,
@@ -374,7 +450,8 @@ export function useRaceReplay({
 
         hasNextCard:
             cardGroupIndex <
-            model.cardGroups.length - 1,
+            model.cardGroups.length -
+            1,
 
         currentCardNumber:
             cardGroupIndex >= 0

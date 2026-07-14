@@ -1,16 +1,56 @@
-import type { PodiumEntry } from "./Podium";
-import type { RaceEvent } from "./RaceEvent";
-import type { RacerState } from "./Racer";
-import type { RacePayoutSummary } from "./Payout";
-import type { SideBetDefinition } from "../cards/SideBets";
+import type {
+    DraftedBetTicket
+} from "./Betting";
+
+import type {
+    RacePayoutSummary
+} from "./Payout";
+
+import type {
+    PodiumEntry
+} from "./Podium";
+
+import type {
+    RaceEvent
+} from "./RaceEvent";
+
+import type {
+    RacerState
+} from "./Racer";
+
+import type {
+    SideBetDefinition
+} from "../cards/SideBets";
+
+export type ReplayPlayer = {
+    id: string;
+    name: string;
+
+    draftedTickets:
+    DraftedBetTicket[];
+
+    doubledTicketId:
+    string | null;
+};
 
 export type CompletedRaceReplay = {
     raceNumber: number;
 
-    initialRacers: RacerState[];
-    events: RaceEvent[];
-    podium: PodiumEntry[];
+    initialRacers:
+    RacerState[];
 
-    sideBet: SideBetDefinition;
-    payoutSummary: RacePayoutSummary;
+    events:
+    RaceEvent[];
+
+    podium:
+    PodiumEntry[];
+
+    sideBet:
+    SideBetDefinition;
+
+    payoutSummary:
+    RacePayoutSummary;
+
+    players:
+    ReplayPlayer[];
 };

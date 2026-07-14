@@ -824,30 +824,35 @@ function archiveCompletedRaceReplay(
     const replayAlreadyExists =
         room.completedRaceReplays.some(
             (replay) =>
-                replay.raceNumber === room.raceNumber
+                replay.raceNumber ===
+                room.raceNumber
         );
 
     if (replayAlreadyExists) {
         return;
     }
 
-    const replay: CompletedRaceReplay = {
-        raceNumber: room.raceNumber,
+    const replay:
+        CompletedRaceReplay = {
+        raceNumber:
+            room.raceNumber,
 
         initialRacers:
             createInitialRacers().map(
                 cloneRacerState
             ),
 
-        events: room.raceEvents.map(
-            cloneRaceEvent
-        ),
+        events:
+            room.raceEvents.map(
+                cloneRaceEvent
+            ),
 
-        podium: room.podium.map(
-            (entry) => ({
-                ...entry
-            })
-        ),
+        podium:
+            room.podium.map(
+                (entry) => ({
+                    ...entry
+                })
+            ),
 
         sideBet: {
             ...room.currentSideBet
@@ -857,19 +862,52 @@ function archiveCompletedRaceReplay(
             ...room.payoutSummary,
 
             playerPayouts:
-                room.payoutSummary.playerPayouts.map(
-                    (playerPayout) => ({
-                        ...playerPayout,
+                room.payoutSummary
+                    .playerPayouts
+                    .map(
+                        (
+                            playerPayout
+                        ) => ({
+                            ...playerPayout,
 
-                        tickets:
-                            playerPayout.tickets.map(
-                                (ticket) => ({
-                                    ...ticket
-                                })
-                            )
-                    })
-                )
-        }
+                            tickets:
+                                playerPayout
+                                    .tickets
+                                    .map(
+                                        (
+                                            ticket
+                                        ) => ({
+                                            ...ticket
+                                        })
+                                    )
+                        })
+                    )
+        },
+
+        /*
+         * Preserve the exact betting context
+         * for this completed race.
+         */
+        players:
+            room.players.map(
+                (player) => ({
+                    id:
+                        player.id,
+
+                    name:
+                        player.name,
+
+                    draftedTickets:
+                        player.draftedTickets.map(
+                            (ticket) => ({
+                                ...ticket
+                            })
+                        ),
+
+                    doubledTicketId:
+                        player.doubledTicketId
+                })
+            )
     };
 
     room.completedRaceReplays.push(

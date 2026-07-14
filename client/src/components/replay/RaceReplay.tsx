@@ -8,7 +8,22 @@ import {
 } from "@crazy-racing/shared";
 
 import { Board } from "../../board/Board";
-import { RaceCardView } from "../cards/RaceCardView";
+
+import {
+    CurrentSideBetCard
+} from "../betting/CurrentSideBetCard";
+
+import {
+    DraftedTicketIcon
+} from "../betting/DraftedTicketIcon";
+
+import {
+    PayoutSummary
+} from "../betting/PayoutSummary";
+
+import {
+    RaceCardView
+} from "../cards/RaceCardView";
 
 import {
     buildRaceReplay
@@ -25,8 +40,11 @@ import type {
 import "./RaceReplay.css";
 
 type RaceReplayProps = {
-    replay: CompletedRaceReplay;
-    onExit: () => void;
+    replay:
+    CompletedRaceReplay;
+
+    onExit:
+    () => void;
 };
 
 const REPLAY_SPEEDS:
@@ -60,6 +78,8 @@ export function RaceReplay({
         setSpeed,
 
         isPlaying,
+        isReplayComplete,
+
         play,
         pause,
 
@@ -79,7 +99,8 @@ export function RaceReplay({
     const cardDefinition =
         currentGroup?.cardEvent
             ? CARD_CATALOG_BY_ID[
-            currentGroup.cardEvent
+            currentGroup
+                .cardEvent
                 .definitionId
             ]
             : null;
@@ -89,7 +110,8 @@ export function RaceReplay({
             <header className="raceReplayHeader">
                 <div>
                     <span>
-                        Race {replay.raceNumber}
+                        Race{" "}
+                        {replay.raceNumber}
                     </span>
 
                     <h3>
@@ -106,61 +128,257 @@ export function RaceReplay({
                 </button>
             </header>
 
-            <div className="replayProgress">
-                Card{" "}
-                <strong>
-                    {currentCardNumber}
-                </strong>
-                {" "}of{" "}
-                <strong>
-                    {totalCards}
-                </strong>
-            </div>
+            <section className="replayRaceContext">
+                <ReplayPlayers
+                    replay={replay}
+                />
 
-            <Board
-                racers={
-                    currentFrame.racers
+                <CurrentSideBetCard
+                    sideBet={
+                        replay.sideBet
+                    }
+                />
+            </section>
+
+            {isReplayComplete ? (
+                <ReplayFinalScreen
+                    replay={replay}
+                    onRestart={restart}
+                />
+            ) : (
+                <>
+                    <div className="replayProgress">
+                        Card{" "}
+                        <strong>
+                            {currentCardNumber}
+                        </strong>
+                        {" "}of{" "}
+                        <strong>
+                            {totalCards}
+                        </strong>
+                    </div>
+
+                    <Board
+                        racers={
+                            currentFrame
+                                .racers
+                        }
+                        shortenedBy={
+                            currentFrame
+                                .shortenedBy
+                        }
+                        remainingCards={0}
+                        deckCounterLabel={
+                            "Replay mode"
+                        }
+                        activeEvent={
+                            currentFrame
+                                .trigger
+                        }
+                        activeCardOwner={
+                            currentFrame
+                                .cardOwner
+                        }
+                        isAnimating={
+                            isPlaying
+                        }
+                    />
+
+                    <section className="replayCurrentCard">
+                        <h4>
+                            Current card
+                        </h4>
+
+                        {cardDefinition ? (
+                            <RaceCardView
+                                definition={
+                                    cardDefinition
+                                }
+                                size="compact"
+                                disabled
+                            />
+                        ) : (
+                            <p>
+                                The replay has
+                                not started.
+                            </p>
+                        )}
+                    </section>
+                </>
+            )}
+
+            <ReplayControls
+                isPlaying={isPlaying}
+                isReplayComplete={
+                    isReplayComplete
                 }
-                shortenedBy={
-                    currentFrame.shortenedBy
+                hasPreviousCard={
+                    hasPreviousCard
                 }
-                remainingCards={0}
-                deckCounterLabel="Replay mode"
-                activeEvent={
-                    currentFrame.trigger
+                hasNextCard={
+                    hasNextCard
                 }
-                activeCardOwner={
-                    currentFrame.cardOwner
+                speed={speed}
+                onRestart={restart}
+                onPrevious={
+                    previousCard
                 }
-                isAnimating={
-                    isPlaying
+                onPlay={play}
+                onPause={pause}
+                onNext={nextCard}
+                onSpeedChange={
+                    setSpeed
                 }
             />
 
-            <section className="replayCurrentCard">
+            {!isReplayComplete && (
+                <section className="replayLog">
+                    <h4>
+                        Replay log
+                    </h4>
+
+                    {visibleLogEntries
+                        .length === 0 ? (
+                        <p>
+                            Start the replay
+                            to view race events.
+                        </p>
+                    ) : (
+                        visibleLogEntries.map(
+                            (
+                                entry,
+                                index
+                            ) => (
+                                <p
+                                    key={
+                                        `${index}-${entry}`
+                                    }
+                                >
+                                    {entry}
+                                </p>
+                            )
+                        )
+                    )}
+                </section>
+            )}
+        </section>
+    );
+}
+
+function ReplayPlayers({
+    replay
+}: {
+    replay:
+    CompletedRaceReplay;
+}) {
+    return (
+        <section className="replayPlayers">
+            <header>
+                <span>
+                    Race bets
+                </span>
+
                 <h4>
-                    Current card
+                    Players and tickets
                 </h4>
+            </header>
 
-                {cardDefinition ? (
-                    <RaceCardView
-                        definition={
-                            cardDefinition
-                        }
-                        size="compact"
-                        disabled
-                    />
-                ) : (
-                    <p>
-                        The replay has not started.
-                    </p>
+            <div className="replayPlayerList">
+                {replay.players.map(
+                    (player) => (
+                        <article
+                            key={
+                                player.id
+                            }
+                            className="replayPlayerCard"
+                        >
+                            <strong>
+                                {player.name}
+                            </strong>
+
+                            <div className="replayPlayerTickets">
+                                {player
+                                    .draftedTickets
+                                    .map(
+                                        (
+                                            ticket
+                                        ) => (
+                                            <DraftedTicketIcon
+                                                key={
+                                                    ticket.id
+                                                }
+                                                ticket={
+                                                    ticket
+                                                }
+                                            />
+                                        )
+                                    )}
+                            </div>
+                        </article>
+                    )
                 )}
-            </section>
+            </div>
+        </section>
+    );
+}
 
+type ReplayControlsProps = {
+    isPlaying:
+    boolean;
+
+    isReplayComplete:
+    boolean;
+
+    hasPreviousCard:
+    boolean;
+
+    hasNextCard:
+    boolean;
+
+    speed:
+    ReplaySpeed;
+
+    onRestart:
+    () => void;
+
+    onPrevious:
+    () => void;
+
+    onPlay:
+    () => void;
+
+    onPause:
+    () => void;
+
+    onNext:
+    () => void;
+
+    onSpeedChange:
+    (
+        speed:
+            ReplaySpeed
+    ) => void;
+};
+
+function ReplayControls({
+    isPlaying,
+    isReplayComplete,
+    hasPreviousCard,
+    hasNextCard,
+    speed,
+    onRestart,
+    onPrevious,
+    onPlay,
+    onPause,
+    onNext,
+    onSpeedChange
+}: ReplayControlsProps) {
+    return (
+        <>
             <div className="replayControls">
                 <button
                     type="button"
-                    onClick={restart}
+                    onClick={onRestart}
                 >
                     Restart
                 </button>
@@ -170,9 +388,7 @@ export function RaceReplay({
                     disabled={
                         !hasPreviousCard
                     }
-                    onClick={
-                        previousCard
-                    }
+                    onClick={onPrevious}
                 >
                     Previous card
                 </button>
@@ -180,16 +396,18 @@ export function RaceReplay({
                 {isPlaying ? (
                     <button
                         type="button"
-                        onClick={pause}
+                        onClick={onPause}
                     >
                         Pause
                     </button>
                 ) : (
                     <button
                         type="button"
-                        onClick={play}
+                        onClick={onPlay}
                     >
-                        Play
+                        {isReplayComplete
+                            ? "Play again"
+                            : "Play"}
                     </button>
                 )}
 
@@ -198,7 +416,7 @@ export function RaceReplay({
                     disabled={
                         !hasNextCard
                     }
-                    onClick={nextCard}
+                    onClick={onNext}
                 >
                     Next card
                 </button>
@@ -210,7 +428,9 @@ export function RaceReplay({
                 </span>
 
                 {REPLAY_SPEEDS.map(
-                    (availableSpeed) => (
+                    (
+                        availableSpeed
+                    ) => (
                         <button
                             type="button"
                             key={
@@ -223,7 +443,7 @@ export function RaceReplay({
                                     : ""
                             }
                             onClick={() =>
-                                setSpeed(
+                                onSpeedChange(
                                     availableSpeed
                                 )
                             }
@@ -233,35 +453,124 @@ export function RaceReplay({
                     )
                 )}
             </div>
+        </>
+    );
+}
 
-            <section className="replayLog">
-                <h4>
-                    Replay log
-                </h4>
+function ReplayFinalScreen({
+    replay,
+    onRestart
+}: {
+    replay:
+    CompletedRaceReplay;
 
-                {visibleLogEntries.length ===
-                    0 ? (
-                    <p>
-                        Start the replay to view
-                        race events.
-                    </p>
-                ) : (
-                    visibleLogEntries.map(
-                        (
-                            entry,
-                            index
-                        ) => (
-                            <p
-                                key={
-                                    `${index}-${entry}`
-                                }
-                            >
-                                {entry}
-                            </p>
-                        )
+    onRestart:
+    () => void;
+}) {
+    return (
+        <section className="replayFinalScreen">
+            <header className="replayFinalHeader">
+                <span>
+                    Race{" "}
+                    {replay.raceNumber}
+                </span>
+
+                <h3>
+                    Race finished
+                </h3>
+
+                <p>
+                    Final podium and betting
+                    payouts for this race.
+                </p>
+            </header>
+
+            <ReplayPodium
+                replay={replay}
+            />
+
+            <PayoutSummary
+                summary={
+                    replay.payoutSummary
+                }
+            />
+
+            <button
+                type="button"
+                className="replayAgainButton"
+                onClick={onRestart}
+            >
+                Replay this race again
+            </button>
+        </section>
+    );
+}
+
+function ReplayPodium({
+    replay
+}: {
+    replay:
+    CompletedRaceReplay;
+}) {
+    const sortedPodium =
+        [...replay.podium].sort(
+            (first, second) =>
+                (
+                    first.place ??
+                    4
+                ) -
+                (
+                    second.place ??
+                    4
+                )
+        );
+
+    return (
+        <section className="replayPodium">
+            <h4>
+                Final podium
+            </h4>
+
+            <div className="replayPodiumEntries">
+                {sortedPodium.map(
+                    (
+                        entry,
+                        index
+                    ) => (
+                        <div
+                            key={
+                                `${entry.racer}-${index}`
+                            }
+                            className={
+                                `replayPodiumEntry ` +
+                                `replayPodiumPlace` +
+                                `${entry.place ?? 4}`
+                            }
+                        >
+                            <strong>
+                                #{entry.place ??
+                                    4}
+                            </strong>
+
+                            <span>
+                                {entry.racer}
+                            </span>
+
+                            <small>
+                                {entry.status ===
+                                    "DQ"
+                                    ? "DQ"
+                                    : (
+                                        entry.status ===
+                                            "remaining"
+                                            ? "Remaining racer"
+                                            : "Finished"
+                                    )}
+                            </small>
+                        </div>
                     )
                 )}
-            </section>
+            </div>
         </section>
     );
 }
