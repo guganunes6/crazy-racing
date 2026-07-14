@@ -9,33 +9,21 @@ import {
 
 import { Board } from "../../board/Board";
 
-import {
-    CurrentSideBetCard
-} from "../betting/CurrentSideBetCard";
+import { CurrentSideBetCard } from "../betting/CurrentSideBetCard";
 
-import {
-    DraftedTicketIcon
-} from "../betting/DraftedTicketIcon";
+import { DraftedTicketIcon } from "../betting/DraftedTicketIcon";
 
-import {
-    PayoutSummary
-} from "../betting/PayoutSummary";
+import { PayoutSummary } from "../betting/PayoutSummary";
 
-import {
-    RaceCardView
-} from "../cards/RaceCardView";
+import { RaceCardView } from "../cards/RaceCardView";
 
-import {
-    buildRaceReplay
-} from "../../replay/buildRaceReplay";
+import { buildRaceReplay } from "../../replay/buildRaceReplay";
 
-import {
-    useRaceReplay
-} from "../../replay/useRaceReplay";
+import { useRaceReplay } from "../../replay/useRaceReplay";
 
-import type {
-    ReplaySpeed
-} from "../../replay/ReplayTypes";
+import { downloadRaceReplay } from "../../replay/ReplayFile";
+
+import type { ReplaySpeed } from "../../replay/ReplayTypes";
 
 import "./RaceReplay.css";
 
@@ -119,13 +107,27 @@ export function RaceReplay({
                     </h3>
                 </div>
 
-                <button
-                    type="button"
-                    className="replayExitButton"
-                    onClick={onExit}
-                >
-                    Exit replay
-                </button>
+                <div className="replayHeaderActions">
+                    <button
+                        type="button"
+                        className="replayExportButton"
+                        onClick={() =>
+                            downloadRaceReplay(
+                                replay
+                            )
+                        }
+                    >
+                        Export replay
+                    </button>
+
+                    <button
+                        type="button"
+                        className="replayExitButton"
+                        onClick={onExit}
+                    >
+                        Exit replay
+                    </button>
+                </div>
             </header>
 
             <section className="replayRaceContext">

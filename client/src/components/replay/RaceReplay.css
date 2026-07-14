@@ -27,6 +27,22 @@
         color: #facc15;
     }
 
+.replayHeaderActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+    .replayHeaderActions button {
+        margin: 0;
+    }
+
+.replayExportButton {
+    background: #38bdf8;
+    color: #082f49;
+}
+
 .replayExitButton {
     background: #334155;
     color: #f8fafc;
@@ -266,9 +282,14 @@
         flex-direction: column;
     }
 
-    .replayExitButton {
-        align-self: flex-start;
+    .replayHeaderActions {
+        align-items: stretch;
+        flex-direction: column;
     }
+
+        .replayHeaderActions button {
+            width: 100%;
+        }
 
     .replayProgress {
         align-self: flex-start;
