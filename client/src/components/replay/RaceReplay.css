@@ -250,12 +250,6 @@
     border-color: #64748b;
 }
 
-.replayAgainButton {
-    align-self: center;
-    background: #38bdf8;
-    color: #082f49;
-}
-
 @media (max-width: 900px) {
     .replayRaceContext {
         grid-template-columns: 1fr;

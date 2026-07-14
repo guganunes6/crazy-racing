@@ -143,7 +143,6 @@ export function RaceReplay({
             {isReplayComplete ? (
                 <ReplayFinalScreen
                     replay={replay}
-                    onRestart={restart}
                 />
             ) : (
                 <>
@@ -404,10 +403,9 @@ function ReplayControls({
                     <button
                         type="button"
                         onClick={onPlay}
+                        disabled={isReplayComplete}
                     >
-                        {isReplayComplete
-                            ? "Play again"
-                            : "Play"}
+                        Play
                     </button>
                 )}
 
@@ -458,14 +456,10 @@ function ReplayControls({
 }
 
 function ReplayFinalScreen({
-    replay,
-    onRestart
+    replay
 }: {
     replay:
     CompletedRaceReplay;
-
-    onRestart:
-    () => void;
 }) {
     return (
         <section className="replayFinalScreen">
@@ -494,14 +488,6 @@ function ReplayFinalScreen({
                     replay.payoutSummary
                 }
             />
-
-            <button
-                type="button"
-                className="replayAgainButton"
-                onClick={onRestart}
-            >
-                Replay this race again
-            </button>
         </section>
     );
 }
