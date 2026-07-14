@@ -205,7 +205,8 @@ function App() {
         raceNumber: room?.raceNumber ?? 0,
         enabled:
             room?.phase === "racing" ||
-            room?.phase === "reshuffle-required"
+            room?.phase === "reshuffle-required" ||
+            room?.phase === "race-complete"
     });
 
     function handleSocketResponse(
@@ -418,6 +419,28 @@ function App() {
             },
             (response: SocketResponse) => {
                 handleSocketResponse(response);
+            }
+        );
+    }
+
+    function checkRaceResults() {
+        if (!room) {
+            return;
+        }
+
+        socket.emit(
+            "race:check-results",
+            {
+                roomCode:
+                    room.roomCode
+            },
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -840,8 +863,8 @@ function App() {
 
                     {(
                         room.phase === "racing" ||
-                        room.phase ===
-                        "reshuffle-required"
+                        room.phase === "reshuffle-required" ||
+                        room.phase === "race-complete"
                     ) && (
                             <section className="racePhase">
                                 <Board
@@ -868,7 +891,9 @@ function App() {
                                                 <button
                                                     type="button"
                                                     onClick={stepRace}
-                                                    disabled={isAnimating}
+                                                    disabled={
+                                                        isAnimating
+                                                    }
                                                 >
                                                     Flip next card
                                                 </button>
@@ -882,10 +907,29 @@ function App() {
                                                     onClick={
                                                         reshuffleRaceDeck
                                                     }
-                                                    disabled={isAnimating}
+                                                    disabled={
+                                                        isAnimating
+                                                    }
                                                 >
-                                                    Reshuffle race card
-                                                    deck
+                                                    Reshuffle race card deck
+                                                </button>
+                                            )}
+
+                                        {room.phase ===
+                                            "race-complete" && (
+                                                <button
+                                                    type="button"
+                                                    className="checkRaceResultsButton"
+                                                    onClick={
+                                                        checkRaceResults
+                                                    }
+                                                    disabled={
+                                                        isAnimating
+                                                    }
+                                                >
+                                                    {isAnimating
+                                                        ? "Finishing animations..."
+                                                        : "Check race results!"}
                                                 </button>
                                             )}
                                     </div>
@@ -893,8 +937,10 @@ function App() {
 
                                 {!isHost && (
                                     <p className="hostControlMessage">
-                                        The room host controls the
-                                        racing deck.
+                                        {room.phase ===
+                                            "race-complete"
+                                            ? "Waiting for the room host to check the race results."
+                                            : "The room host controls the racing deck."}
                                     </p>
                                 )}
                             </section>

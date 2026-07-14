@@ -199,7 +199,7 @@ export function checkRaceEnd(
         });
     }
 
-    room.phase = "payouts";
+    room.phase = "race-complete";
 
     recordRaceEvent(room, {
         type: "RACE_ENDED",

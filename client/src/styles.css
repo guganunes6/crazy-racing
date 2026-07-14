@@ -34,14 +34,14 @@ button {
     transition: transform 160ms ease, opacity 160ms ease, background-color 160ms ease;
 }
 
-    button:hover:not(:disabled) {
-        transform: translateY(-1px);
-    }
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
 
-    button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-    }
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
 
 input {
     margin: 6px;
@@ -50,9 +50,9 @@ input {
     color: white;
 }
 
-    input::placeholder {
-        color: #94a3b8;
-    }
+input::placeholder {
+    color: #94a3b8;
+}
 
 .page {
     min-height: 100vh;
@@ -79,15 +79,15 @@ input {
     flex-direction: column;
 }
 
-    .menu h1,
-    .topbar h1 {
-        color: #facc15;
-        letter-spacing: 1px;
-    }
+.menu h1,
+.topbar h1 {
+    color: #facc15;
+    letter-spacing: 1px;
+}
 
-    .menu p {
-        color: #cbd5e1;
-    }
+.menu p {
+    color: #cbd5e1;
+}
 
 .topbar {
     display: flex;
@@ -97,9 +97,9 @@ input {
     margin-bottom: 18px;
 }
 
-    .topbar h1 {
-        margin: 0;
-    }
+.topbar h1 {
+    margin: 0;
+}
 
 .roomInformation {
     display: flex;
@@ -120,9 +120,9 @@ input {
     min-height: 700px;
 }
 
-    .mainpanel > h2 {
-        margin-top: 0;
-    }
+.mainpanel > h2 {
+    margin-top: 0;
+}
 
 .playersPanel,
 .racersPanel {
@@ -218,9 +218,9 @@ input {
     background: #0f172a;
 }
 
-    .result strong {
-        color: #facc15;
-    }
+.result strong {
+    color: #facc15;
+}
 
 .error {
     margin: 10px 0;
@@ -246,18 +246,18 @@ input {
     text-align: center;
 }
 
-    .racerBadge img {
-        width: 80px;
-        max-width: 100%;
-        height: 80px;
-        object-fit: contain;
-    }
+.racerBadge img {
+    width: 80px;
+    max-width: 100%;
+    height: 80px;
+    object-fit: contain;
+}
 
-    .racerBadge strong {
-        display: block;
-        margin-top: 5px;
-        font-size: 12px;
-    }
+.racerBadge strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+}
 
 .racerBadgeLION {
     border-color: #7e22ce;
@@ -287,9 +287,9 @@ input {
     background: #0f172a;
 }
 
-    .raceDeckStatus strong {
-        color: #facc15;
-    }
+.raceDeckStatus strong {
+    color: #facc15;
+}
 
 .currentCard {
     display: flex;
@@ -302,17 +302,17 @@ input {
     background: #0f172a;
 }
 
-    .currentCard span {
-        color: #94a3b8;
-        font-size: 13px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
+.currentCard span {
+    color: #94a3b8;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
 
-    .currentCard strong {
-        color: #facc15;
-        font-size: 20px;
-    }
+.currentCard strong {
+    color: #facc15;
+    font-size: 20px;
+}
 
 .raceControls {
     display: flex;
@@ -406,6 +406,19 @@ input {
     gap: 18px;
 }
 
+.checkRaceResultsButton {
+    padding: 15px 22px;
+    background: #22c55e;
+    color: #052e16;
+    font-size: 18px;
+    letter-spacing: 0.03em;
+}
+
+.checkRaceResultsButton:disabled {
+    background: #475569;
+    color: #cbd5e1;
+}
+
 .finalReplayHistory {
     display: flex;
     flex-direction: column;
@@ -424,26 +437,26 @@ input {
     gap: 16px;
 }
 
-    .finalReplayHistoryHeader span {
-        color: #94a3b8;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
+.finalReplayHistoryHeader span {
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
 
-    .finalReplayHistoryHeader h3 {
-        margin: 4px 0 0;
-        color: #facc15;
-    }
+.finalReplayHistoryHeader h3 {
+    margin: 4px 0 0;
+    color: #facc15;
+}
 
-    .finalReplayHistoryHeader p {
-        max-width: 320px;
-        margin: 0;
-        color: #cbd5e1;
-        line-height: 1.4;
-        text-align: right;
-    }
+.finalReplayHistoryHeader p {
+    max-width: 320px;
+    margin: 0;
+    color: #cbd5e1;
+    line-height: 1.4;
+    text-align: right;
+}
 
 .finalReplayButtons {
     display: grid;
@@ -464,23 +477,23 @@ input {
     text-align: left;
 }
 
-    .finalReplayButton:hover:not(:disabled) {
-        border-color: #38bdf8;
-        background: #0c4a6e;
-    }
+.finalReplayButton:hover:not(:disabled) {
+    border-color: #38bdf8;
+    background: #0c4a6e;
+}
 
-    .finalReplayButton span {
-        color: #94a3b8;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
+.finalReplayButton span {
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
 
-    .finalReplayButton strong {
-        color: #f8fafc;
-        font-size: 16px;
-    }
+.finalReplayButton strong {
+    color: #f8fafc;
+    font-size: 16px;
+}
 
 .finalReplayUnavailable {
     margin: 0;
@@ -492,10 +505,10 @@ input {
         flex-direction: column;
     }
 
-        .finalReplayHistoryHeader p {
-            max-width: none;
-            text-align: left;
-        }
+    .finalReplayHistoryHeader p {
+        max-width: none;
+        text-align: left;
+    }
 }
 
 .finalResultCard {
@@ -514,21 +527,21 @@ input {
     gap: 12px;
 }
 
-    .finalResultRanking > span {
-        color: #facc15;
-        font-size: 28px;
-        font-weight: 900;
-    }
+.finalResultRanking > span {
+    color: #facc15;
+    font-size: 28px;
+    font-weight: 900;
+}
 
-    .finalResultRanking > div {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
+.finalResultRanking > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
 
-    .finalResultRanking strong {
-        font-size: 18px;
-    }
+.finalResultRanking strong {
+    font-size: 18px;
+}
 
 .finalResultMoney {
     color: #86efac;
@@ -541,15 +554,15 @@ input {
     padding-left: 16px;
 }
 
-    .lifeOutcome strong {
-        color: #facc15;
-    }
+.lifeOutcome strong {
+    color: #facc15;
+}
 
-    .lifeOutcome p {
-        margin: 6px 0 0;
-        color: #e2e8f0;
-        line-height: 1.45;
-    }
+.lifeOutcome p {
+    margin: 6px 0 0;
+    color: #e2e8f0;
+    line-height: 1.45;
+}
 
 @media (max-width: 700px) {
     .finalResultCard {
@@ -574,16 +587,16 @@ input {
     font-size: 14px;
 }
 
-    .log p {
-        margin: 0;
-        border-bottom: 1px solid rgba(51, 65, 85, 0.65);
-        padding: 8px 5px;
-        line-height: 1.35;
-    }
+.log p {
+    margin: 0;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.65);
+    padding: 8px 5px;
+    line-height: 1.35;
+}
 
-        .log p:last-child {
-            border-bottom: 0;
-        }
+.log p:last-child {
+    border-bottom: 0;
+}
 
 /*
  * Legacy card classes are kept temporarily in case
@@ -607,9 +620,9 @@ input {
     color: #111827;
 }
 
-    .gamecard.selected {
-        border-color: #22c55e;
-    }
+.gamecard.selected {
+    border-color: #22c55e;
+}
 
 @media (max-width: 1300px) {
     .layout {
@@ -635,9 +648,9 @@ input {
         grid-column: 1 / -1;
     }
 
-        .racersPanel .racers {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
+    .racersPanel .racers {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 760px) {
@@ -660,9 +673,9 @@ input {
         grid-column: 1;
     }
 
-        .racersPanel .racers {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+    .racersPanel .racers {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 
     .raceDeckStatus {
         justify-content: flex-start;

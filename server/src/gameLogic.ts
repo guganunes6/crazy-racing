@@ -41,6 +41,7 @@ export type GamePhase =
     | "ready-to-race"
     | "racing"
     | "reshuffle-required"
+    | "race-complete"
     | "payouts"
     | "final";
 
@@ -365,20 +366,38 @@ export function stepRace(
     const engine =
         new RaceEngine(room);
 
-    const card =
-        engine.playNextCard();
-
-    processPayoutsIfRaceEnded(room);
-
-    return card;
+    return engine.playNextCard();
 }
 
 export function reshuffleRace(
     room: Room
 ): void {
     reshuffleRaceDeck(room);
+}
 
-    processPayoutsIfRaceEnded(room);
+export function confirmRaceResults(
+    room: Room
+): void {
+    if (
+        room.phase !==
+        "race-complete"
+    ) {
+        throw new Error(
+            "The race results are not ready to be checked."
+        );
+    }
+
+    /*
+     * Calculate payouts only after the host confirms that
+     * everyone has finished watching the last card.
+     */
+    if (!room.racePayoutProcessed) {
+        processRacePayouts(room);
+    }
+
+    archiveCompletedRaceReplay(room);
+
+    room.phase = "payouts";
 }
 
 export function finishPayouts(
@@ -793,20 +812,6 @@ function drawRandomSideBet(
     }
 
     return selectedSideBet;
-}
-
-function processPayoutsIfRaceEnded(
-    room: Room
-): void {
-    if (room.phase !== "payouts") {
-        return;
-    }
-
-    if (!room.racePayoutProcessed) {
-        processRacePayouts(room);
-    }
-
-    archiveCompletedRaceReplay(room);
 }
 
 function archiveCompletedRaceReplay(

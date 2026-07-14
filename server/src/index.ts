@@ -23,6 +23,7 @@ import {
     beginRace,
     stepRace,
     reshuffleRace,
+    confirmRaceResults,
     finishPayouts,
     selectRaceAgain,
     canRestartGame,
@@ -656,6 +657,50 @@ io.on(
                     reshuffleRace(
                         room
                     );
+
+                    emitRoom(room);
+
+                    callback({
+                        ok: true
+                    });
+                } catch (error) {
+                    callback({
+                        ok: false,
+                        error:
+                            getErrorMessage(
+                                error
+                            )
+                    });
+                }
+            }
+        );
+
+        socket.on(
+            "race:check-results",
+            (
+                { roomCode },
+                callback
+            ) => {
+                try {
+                    const room =
+                        rooms.get(roomCode);
+
+                    if (!room) {
+                        throw new Error(
+                            "Room not found."
+                        );
+                    }
+
+                    if (
+                        room.hostSocketId !==
+                        socket.id
+                    ) {
+                        throw new Error(
+                            "Only the host can check the race results."
+                        );
+                    }
+
+                    confirmRaceResults(room);
 
                     emitRoom(room);
 
