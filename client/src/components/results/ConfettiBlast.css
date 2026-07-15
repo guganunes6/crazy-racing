@@ -1,0 +1,173 @@
+.confettiBlast {
+    --confetti-page-height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 250;
+    width: 100%;
+    height: var( --confetti-page-height );
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.confettiPiece {
+    --confetti-left: 50%;
+    --confetti-start-top: -24px;
+    --confetti-delay: 0ms;
+    --confetti-duration: 5000ms;
+    --confetti-drift: 0px;
+    --confetti-rotation: 720deg;
+    --confetti-size: 10px;
+    --confetti-color: #facc15;
+    position: absolute;
+    top: var( --confetti-start-top );
+    left: var( --confetti-left );
+    width: var( --confetti-size );
+    height: calc( var( --confetti-size ) * 1.65 );
+    border-radius: 2px;
+    background: var( --confetti-color );
+    opacity: 0;
+    animation: confettiFall var( --confetti-duration ) cubic-bezier( 0.18, 0.74, 0.25, 1 ) var( --confetti-delay ) forwards;
+    will-change: transform, opacity;
+}
+
+.confettiPieceCircle {
+    height: var( --confetti-size );
+    border-radius: 999px;
+}
+
+.confettiCannon {
+    position: fixed;
+    bottom: 18px;
+    width: 110px;
+    height: 110px;
+    opacity: 0;
+    animation: confettiCannonFlash 1100ms ease-out forwards;
+}
+
+.confettiCannonLeft {
+    left: 5%;
+    transform: rotate(34deg);
+}
+
+.confettiCannonRight {
+    right: 5%;
+    transform: rotate(-34deg);
+}
+
+.confettiCannon span {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 26px;
+    height: 76px;
+    transform: translateX(-50%);
+    border: 4px solid #facc15;
+    border-radius: 8px 8px 18px 18px;
+    background: linear-gradient( to top, #334155, #64748b );
+    box-shadow: 0 0 24px rgba( 250, 204, 21, 0.62 );
+}
+
+.confettiCannon::before,
+.confettiCannon::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 18px;
+    height: 65px;
+    transform-origin: center bottom;
+    border-radius: 50%;
+    background: linear-gradient( to top, rgba( 250, 204, 21, 0.7 ), transparent );
+    filter: blur(5px);
+}
+
+.confettiCannon::before {
+    transform: translateX(-50%) rotate(-22deg);
+}
+
+.confettiCannon::after {
+    transform: translateX(-50%) rotate(22deg);
+}
+
+@keyframes confettiFall {
+    0% {
+        opacity: 0;
+        transform: translate3d( 0, -50px, 0 ) rotate(0deg) scale(0.65);
+    }
+
+    5% {
+        opacity: 1;
+    }
+
+    22% {
+        transform: translate3d( calc( var( --confetti-drift ) * 0.28 ), calc( var( --confetti-page-height ) * 0.24 ), 0 ) rotate( calc( var( --confetti-rotation ) * 0.28 ) ) scale(1);
+    }
+
+    48% {
+        opacity: 1;
+        transform: translate3d( calc( var( --confetti-drift ) * 0.58 ), calc( var( --confetti-page-height ) * 0.52 ), 0 ) rotate( calc( var( --confetti-rotation ) * 0.58 ) ) scale(0.95);
+    }
+
+    76% {
+        opacity: 1;
+        transform: translate3d( calc( var( --confetti-drift ) * 0.82 ), calc( var( --confetti-page-height ) * 0.8 ), 0 ) rotate( calc( var( --confetti-rotation ) * 0.82 ) ) scale(0.85);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d( var( --confetti-drift ), calc( var( --confetti-page-height ) + 160px ), 0 ) rotate( var( --confetti-rotation ) ) scale(0.68);
+    }
+}
+
+@keyframes confettiCannonFlash {
+    0% {
+        opacity: 0;
+        filter: brightness(1);
+    }
+
+    12% {
+        opacity: 1;
+        filter: brightness(2);
+    }
+
+    55% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        filter: brightness(1);
+    }
+}
+
+@media (max-width: 700px) {
+    .confettiCannon {
+        width: 75px;
+        height: 75px;
+    }
+
+        .confettiCannon span {
+            width: 20px;
+            height: 54px;
+        }
+
+    .confettiPiece {
+        width: calc( var( --confetti-size ) * 0.8 );
+        height: calc( var( --confetti-size ) * 1.3 );
+    }
+
+    .confettiPieceCircle {
+        height: calc( var( --confetti-size ) * 0.8 );
+    }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+    .confettiPiece {
+        animation-duration: 1ms !important;
+    }
+
+    .confettiCannon {
+        display: none;
+    }
+}

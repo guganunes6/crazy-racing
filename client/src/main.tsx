@@ -30,6 +30,7 @@ import { PublicRaceDeck } from "./components/cards/PublicRaceDeck";
 import { RaceCountdown } from "./components/race/RaceCountdown";
 import { RaceReplay } from "./components/replay/RaceReplay";
 import { ReplayImportButton } from "./components/replay/ReplayImportButton";
+import { ConfettiBlast } from "./components/results/ConfettiBlast";
 import { useRaceAnimation } from "./animation/useRaceAnimation";
 
 import "./styles.css";
@@ -1403,6 +1404,12 @@ function App() {
                     {room.phase ===
                         "final" && (
                             <section className="finalPhase">
+                                {!activeReplay && (
+                                    <ConfettiBlast
+                                        durationMs={8000}
+                                        pieceCount={500}
+                                    />
+                                )}
                                 {activeReplay ? (
                                     <RaceReplay
                                         replay={
