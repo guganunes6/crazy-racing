@@ -10,9 +10,19 @@ import type {
     RacerState
 } from "@crazy-racing/shared";
 
+import {
+    CARD_REVEAL_DURATION_MS,
+    RACE_ANIMATION_STEP_DURATION_MS
+} from "./AnimationTiming";
+
 type RaceStateEvent = Extract<
     RaceEvent,
     { type: "RACE_STATE" }
+>;
+
+type CardDrawnEvent = Extract<
+    RaceEvent,
+    { type: "CARD_DRAWN" }
 >;
 
 type CardOwner =
@@ -20,32 +30,31 @@ type CardOwner =
     | "GREEN";
 
 type AnimatedRaceStep = {
-    snapshot: RaceStateEvent;
-    trigger: RaceEvent | null;
-    cardOwner: CardOwner | null;
+    snapshot:
+    RaceStateEvent;
+
+    trigger:
+    RaceEvent | null;
+
+    cardOwner:
+    CardOwner | null;
+
+    cardSequence:
+    number | null;
 };
 
 type UseRaceAnimationOptions = {
-    racers: RacerState[];
-    raceEvents: RaceEvent[];
-    raceNumber: number;
-    enabled: boolean;
-};
+    racers:
+    RacerState[];
 
-const STEP_DURATION: Record<
-    RaceStateEvent["source"],
-    number
-> = {
-    CARD: 180,
-    MOVE: 520,
-    SWERVE: 480,
-    COLLISION: 560,
-    FALL: 440,
-    RECOVER: 440,
-    TURN: 440,
-    FOLD: 650,
-    FINISH: 560,
-    DQ: 560
+    raceEvents:
+    RaceEvent[];
+
+    raceNumber:
+    number;
+
+    enabled:
+    boolean;
 };
 
 export function useRaceAnimation({
@@ -80,6 +89,11 @@ export function useRaceAnimation({
         setIsAnimating
     ] = useState(false);
 
+    const [
+        isCardRevealPending,
+        setIsCardRevealPending
+    ] = useState(false);
+
     const queueRef =
         useRef<AnimatedRaceStep[]>([]);
 
@@ -89,6 +103,11 @@ export function useRaceAnimation({
     const lastQueuedSequenceRef =
         useRef(0);
 
+    const lastPlayedCardSequenceRef =
+        useRef<number | null>(
+            null
+        );
+
     const generationRef =
         useRef(0);
 
@@ -97,12 +116,16 @@ export function useRaceAnimation({
 
         queueRef.current = [];
         processingRef.current = false;
+
         lastQueuedSequenceRef.current = 0;
+        lastPlayedCardSequenceRef.current =
+            null;
 
         setVisualRacers(racers);
         setActiveEvent(null);
         setActiveCardOwner(null);
         setIsAnimating(false);
+        setIsCardRevealPending(false);
     }, [raceNumber]);
 
     useEffect(() => {
@@ -112,7 +135,10 @@ export function useRaceAnimation({
 
             lastQueuedSequenceRef.current =
                 raceEvents.reduce(
-                    (highest, event) =>
+                    (
+                        highest,
+                        event
+                    ) =>
                         Math.max(
                             highest,
                             event.sequence
@@ -120,10 +146,20 @@ export function useRaceAnimation({
                     0
                 );
 
+            const latestCard =
+                findLatestCardEvent(
+                    raceEvents
+                );
+
+            lastPlayedCardSequenceRef.current =
+                latestCard?.sequence ??
+                null;
+
             setVisualRacers(racers);
             setActiveEvent(null);
             setActiveCardOwner(null);
             setIsAnimating(false);
+            setIsCardRevealPending(false);
 
             return;
         }
@@ -139,15 +175,18 @@ export function useRaceAnimation({
                     lastQueuedSequenceRef.current
             );
 
-        for (const snapshot of newSnapshots) {
+        for (
+            const snapshot
+            of newSnapshots
+        ) {
             const trigger =
                 findTriggerEvent(
                     raceEvents,
-                    snapshot.sequence
+                    snapshot
                 );
 
-            const cardOwner =
-                findCardOwner(
+            const cardEvent =
+                findCardEvent(
                     raceEvents,
                     snapshot.sequence
                 );
@@ -155,7 +194,14 @@ export function useRaceAnimation({
             queueRef.current.push({
                 snapshot,
                 trigger,
-                cardOwner
+
+                cardOwner:
+                    cardEvent?.owner ??
+                    null,
+
+                cardSequence:
+                    cardEvent?.sequence ??
+                    null
             });
 
             lastQueuedSequenceRef.current =
@@ -169,13 +215,17 @@ export function useRaceAnimation({
             newSnapshots.length === 0 &&
             !processingRef.current
         ) {
-            setVisualRacers(racers);
+            setVisualRacers(
+                racers
+            );
         }
 
         void processQueue();
 
         async function processQueue() {
-            if (processingRef.current) {
+            if (
+                processingRef.current
+            ) {
                 return;
             }
 
@@ -186,7 +236,8 @@ export function useRaceAnimation({
                 generationRef.current;
 
             while (
-                queueRef.current.length > 0 &&
+                queueRef.current.length >
+                0 &&
                 generation ===
                 generationRef.current
             ) {
@@ -195,6 +246,48 @@ export function useRaceAnimation({
 
                 if (!step) {
                     continue;
+                }
+
+                const isFirstStepForCard =
+                    step.cardSequence !==
+                    null &&
+                    step.cardSequence !==
+                    lastPlayedCardSequenceRef
+                        .current;
+
+                if (
+                    isFirstStepForCard
+                ) {
+                    /*
+                     * The server has already sent the
+                     * resulting racer state, but the
+                     * visual board must stay unchanged
+                     * until the newly drawn card has
+                     * finished flipping.
+                     */
+                    setActiveEvent(null);
+                    setActiveCardOwner(null);
+                    setIsCardRevealPending(
+                        true
+                    );
+
+                    await wait(
+                        CARD_REVEAL_DURATION_MS
+                    );
+
+                    if (
+                        generation !==
+                        generationRef.current
+                    ) {
+                        break;
+                    }
+
+                    lastPlayedCardSequenceRef.current =
+                        step.cardSequence;
+
+                    setIsCardRevealPending(
+                        false
+                    );
                 }
 
                 setActiveEvent(
@@ -210,7 +303,7 @@ export function useRaceAnimation({
                 );
 
                 await wait(
-                    STEP_DURATION[
+                    RACE_ANIMATION_STEP_DURATION_MS[
                     step.snapshot.source
                     ]
                 );
@@ -220,12 +313,17 @@ export function useRaceAnimation({
                 generation ===
                 generationRef.current
             ) {
-                processingRef.current = false;
+                processingRef.current =
+                    false;
 
                 setActiveEvent(null);
                 setActiveCardOwner(null);
                 setIsAnimating(false);
-                setVisualRacers(racers);
+                setIsCardRevealPending(false);
+
+                setVisualRacers(
+                    racers
+                );
             }
         }
     }, [
@@ -238,14 +336,23 @@ export function useRaceAnimation({
         visualRacers,
         activeEvent,
         activeCardOwner,
-        isAnimating
+        isAnimating,
+        isCardRevealPending
     };
 }
 
 function findTriggerEvent(
-    events: RaceEvent[],
-    snapshotSequence: number
+    events:
+        RaceEvent[],
+
+    snapshot:
+        RaceStateEvent
 ): RaceEvent | null {
+    const acceptedTypes =
+        getAcceptedTriggerTypes(
+            snapshot.source
+        );
+
     for (
         let index =
             events.length - 1;
@@ -256,10 +363,16 @@ function findTriggerEvent(
             events[index];
 
         if (
-            event.sequence <
-            snapshotSequence &&
-            event.type !==
-            "RACE_STATE"
+            event.sequence >=
+            snapshot.sequence
+        ) {
+            continue;
+        }
+
+        if (
+            acceptedTypes.includes(
+                event.type
+            )
         ) {
             return event;
         }
@@ -268,10 +381,71 @@ function findTriggerEvent(
     return null;
 }
 
-function findCardOwner(
-    events: RaceEvent[],
-    snapshotSequence: number
-): CardOwner | null {
+function getAcceptedTriggerTypes(
+    source:
+        RaceStateEvent["source"]
+): RaceEvent["type"][] {
+    switch (source) {
+        case "CARD":
+            return [
+                "CARD_DRAWN"
+            ];
+
+        case "MOVE":
+            return [
+                "RACER_MOVED"
+            ];
+
+        case "SWERVE":
+            return [
+                "RACER_SWERVED"
+            ];
+
+        case "COLLISION":
+            return [
+                "COLLISION"
+            ];
+
+        case "FALL":
+            return [
+                "RACER_FELL",
+                "RACER_DISQUALIFIED"
+            ];
+
+        case "RECOVER":
+            return [
+                "RACER_RECOVERED"
+            ];
+
+        case "TURN":
+            return [
+                "RACER_TURNED"
+            ];
+
+        case "FOLD":
+            return [
+                "TRACK_FOLDED"
+            ];
+
+        case "FINISH":
+            return [
+                "RACER_FINISHED"
+            ];
+
+        case "DQ":
+            return [
+                "RACER_DISQUALIFIED"
+            ];
+    }
+}
+
+function findCardEvent(
+    events:
+        RaceEvent[],
+
+    snapshotSequence:
+        number
+): CardDrawnEvent | null {
     for (
         let index =
             events.length - 1;
@@ -292,7 +466,31 @@ function findCardOwner(
             event.type ===
             "CARD_DRAWN"
         ) {
-            return event.owner;
+            return event;
+        }
+    }
+
+    return null;
+}
+
+function findLatestCardEvent(
+    events:
+        RaceEvent[]
+): CardDrawnEvent | null {
+    for (
+        let index =
+            events.length - 1;
+        index >= 0;
+        index -= 1
+    ) {
+        const event =
+            events[index];
+
+        if (
+            event.type ===
+            "CARD_DRAWN"
+        ) {
+            return event;
         }
     }
 
@@ -300,7 +498,8 @@ function findCardOwner(
 }
 
 function wait(
-    milliseconds: number
+    milliseconds:
+        number
 ): Promise<void> {
     return new Promise(
         (resolve) => {

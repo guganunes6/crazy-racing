@@ -106,7 +106,7 @@ export function buildRaceReplay(
         const trigger =
             findTriggerEvent(
                 sortedEvents,
-                event.sequence
+                event
             );
 
         const frame =
@@ -196,8 +196,13 @@ function createFrame(
 
 function findTriggerEvent(
     events: RaceEvent[],
-    snapshotSequence: number
+    snapshot: RaceStateEvent
 ): RaceEvent | null {
+    const acceptedTypes =
+        getAcceptedTriggerTypes(
+            snapshot.source
+        );
+
     for (
         let index =
             events.length - 1;
@@ -208,16 +213,80 @@ function findTriggerEvent(
             events[index];
 
         if (
-            event.sequence <
-            snapshotSequence &&
-            event.type !==
-            "RACE_STATE"
+            event.sequence >=
+            snapshot.sequence
+        ) {
+            continue;
+        }
+
+        if (
+            acceptedTypes.includes(
+                event.type
+            )
         ) {
             return event;
         }
     }
 
     return null;
+}
+
+function getAcceptedTriggerTypes(
+    source:
+        RaceStateEvent["source"]
+): RaceEvent["type"][] {
+    switch (source) {
+        case "CARD":
+            return [
+                "CARD_DRAWN"
+            ];
+
+        case "MOVE":
+            return [
+                "RACER_MOVED"
+            ];
+
+        case "SWERVE":
+            return [
+                "RACER_SWERVED"
+            ];
+
+        case "COLLISION":
+            return [
+                "COLLISION"
+            ];
+
+        case "FALL":
+            return [
+                "RACER_FELL",
+                "RACER_DISQUALIFIED"
+            ];
+
+        case "RECOVER":
+            return [
+                "RACER_RECOVERED"
+            ];
+
+        case "TURN":
+            return [
+                "RACER_TURNED"
+            ];
+
+        case "FOLD":
+            return [
+                "TRACK_FOLDED"
+            ];
+
+        case "FINISH":
+            return [
+                "RACER_FINISHED"
+            ];
+
+        case "DQ":
+            return [
+                "RACER_DISQUALIFIED"
+            ];
+    }
 }
 
 function cloneRacers(

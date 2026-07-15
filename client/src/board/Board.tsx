@@ -56,12 +56,45 @@ export function Board({
             `${remainingCards} cards remaining`
         );
 
+    const isReshuffling =
+        activeEvent?.type ===
+        "DECK_RESHUFFLED";
+
+    const isFolding =
+        activeEvent?.type ===
+        "TRACK_FOLDED";
+
+    const hasFinishEvent =
+        activeEvent?.type ===
+        "RACER_FINISHED";
+
+    const hasDqEvent =
+        activeEvent?.type ===
+        "RACER_DISQUALIFIED";
+
     return (
         <section
             className={[
                 "boardScene",
+
                 isAnimating
                     ? "boardAnimating"
+                    : "",
+
+                isReshuffling
+                    ? "boardReshuffling"
+                    : "",
+
+                isFolding
+                    ? "boardFolding"
+                    : "",
+
+                hasFinishEvent
+                    ? "boardFinishEvent"
+                    : "",
+
+                hasDqEvent
+                    ? "boardDqEvent"
                     : ""
             ]
                 .filter(Boolean)

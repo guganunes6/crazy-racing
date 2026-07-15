@@ -6,6 +6,7 @@ import React, {
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import {
+    CARD_CATALOG_BY_ID,
     getLifeOutcome,
     type BetRiskSide,
     type CompletedRaceReplay,
@@ -23,8 +24,10 @@ import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
 import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
 import { DraftedTicketIcon } from "./components/betting/DraftedTicketIcon";
 import { PayoutSummary } from "./components/betting/PayoutSummary";
+import { AnimatedCurrentCard } from "./components/cards/AnimatedCurrentCard";
 import { PrivateHand } from "./components/cards/PrivateHand";
 import { PublicRaceDeck } from "./components/cards/PublicRaceDeck";
+import { RaceCountdown } from "./components/race/RaceCountdown";
 import { RaceReplay } from "./components/replay/RaceReplay";
 import { ReplayImportButton } from "./components/replay/ReplayImportButton";
 import { useRaceAnimation } from "./animation/useRaceAnimation";
@@ -47,6 +50,7 @@ type SocketResponse = {
 };
 
 type CurrentCardDisplay = {
+    definitionId?: string;
     owner: string;
     name: string;
     fullName: string;
@@ -99,7 +103,12 @@ function App() {
         setImportedReplay
     ] = useState<CompletedRaceReplay | null>(
         null
-    );
+        );
+
+    const [
+        isCountdownActive,
+        setIsCountdownActive
+    ] = useState(false);
 
     useEffect(() => {
         function handleRoomUpdate(
@@ -450,24 +459,63 @@ function App() {
             return;
         }
 
+        const maximumSelectedCards =
+            room?.players.length === 2
+                ? 2
+                : 1;
+
         setSelectedCards(
             (current) => {
+                /*
+                 * Clicking an already selected card
+                 * always deselects it.
+                 */
                 if (
                     current.includes(
                         cardId
                     )
                 ) {
                     return current.filter(
-                        (
-                            selectedId
-                        ) =>
+                        (selectedId) =>
                             selectedId !==
                             cardId
                     );
                 }
 
+                /*
+                 * Two-player games allow up to two
+                 * selected private cards.
+                 */
+                if (
+                    maximumSelectedCards === 2
+                ) {
+                    if (
+                        current.length >= 2
+                    ) {
+                        /*
+                         * Replace the oldest selected
+                         * card with the newly clicked one.
+                         */
+                        return [
+                            current[
+                            current.length - 1
+                            ],
+                            cardId
+                        ];
+                    }
+
+                    return [
+                        ...current,
+                        cardId
+                    ];
+                }
+
+                /*
+                 * Games with 3–9 players allow exactly
+                 * one selected card at a time. Clicking
+                 * another card replaces the selection.
+                 */
                 return [
-                    ...current,
                     cardId
                 ];
             }
@@ -1091,9 +1139,16 @@ function App() {
                                         onClick={
                                             submitSecretCards
                                         }
+                                        disabled={
+                                            selectedCards.length !==
+                                            (
+                                                room.players.length === 2
+                                                    ? 2
+                                                    : 1
+                                            )
+                                        }
                                     >
-                                        Confirm secret
-                                        card(s)
+                                        Confirm secret card(s)
                                     </button>
                                 )}
 
@@ -1146,34 +1201,37 @@ function App() {
                         "race-complete"
                     ) && (
                             <section className="racePhase">
-                                <Board
-                                    racers={
-                                        visualRacers
-                                    }
-                                    shortenedBy={
-                                        room.shortenedBy ??
-                                        0
-                                    }
-                                    remainingCards={
-                                        room.deckRemaining ??
-                                        0
-                                    }
-                                    activeEvent={
-                                        activeEvent
-                                    }
-                                    activeCardOwner={
-                                        activeCardOwner
-                                    }
-                                    isAnimating={
-                                        isAnimating
-                                    }
-                                />
+                                <div className="raceBoardStage">
+                                    <Board
+                                        racers={
+                                            visualRacers
+                                        }
+                                        shortenedBy={
+                                            room.shortenedBy ?? 0
+                                        }
+                                        remainingCards={
+                                            room.deckRemaining ?? 0
+                                        }
+                                        activeEvent={
+                                            activeEvent
+                                        }
+                                        activeCardOwner={
+                                            activeCardOwner
+                                        }
+                                        isAnimating={
+                                            isAnimating
+                                        }
+                                    />
 
-                                <CurrentCard
-                                    card={
-                                        room.currentCardDisplay
-                                    }
-                                />
+                                    <RaceCountdown
+                                        raceEvents={
+                                            room.raceEvents ?? []
+                                        }
+                                        onActiveChange={
+                                            setIsCountdownActive
+                                        }
+                                    />
+                                </div>
 
                                 {isHost && (
                                     <div className="raceControls">
@@ -1185,7 +1243,8 @@ function App() {
                                                         stepRace
                                                     }
                                                     disabled={
-                                                        isAnimating
+                                                        isAnimating ||
+                                                        isCountdownActive
                                                     }
                                                 >
                                                     Flip next
@@ -1202,7 +1261,8 @@ function App() {
                                                         reshuffleRaceDeck
                                                     }
                                                     disabled={
-                                                        isAnimating
+                                                        isAnimating ||
+                                                        isCountdownActive
                                                     }
                                                 >
                                                     Reshuffle
@@ -1220,7 +1280,8 @@ function App() {
                                                         checkRaceResults
                                                     }
                                                     disabled={
-                                                        isAnimating
+                                                        isAnimating ||
+                                                        isCountdownActive
                                                     }
                                                 >
                                                     {isAnimating
@@ -1239,6 +1300,29 @@ function App() {
                                             : "The room host controls the racing deck."}
                                     </p>
                                 )}
+
+                                <AnimatedCurrentCard
+                                    card={
+                                        room.currentCardDisplay
+                                    }
+                                    definition={
+                                        room.currentCard
+                                            ?.definitionId
+                                            ? (
+                                                CARD_CATALOG_BY_ID[
+                                                room.currentCard
+                                                    .definitionId
+                                                ] ?? null
+                                            )
+                                            : null
+                                    }
+                                    animationKey={
+                                        room.currentCard?.id ??
+                                        room.currentCardDisplay
+                                            ?.fullName ??
+                                        null
+                                    }
+                                />
                             </section>
                         )}
 
@@ -1650,40 +1734,6 @@ function App() {
                 </aside>
             </section>
         </main>
-    );
-}
-
-function CurrentCard({
-    card
-}: {
-    card:
-    CurrentCardDisplay | null;
-}) {
-    if (!card) {
-        return (
-            <div className="currentCard">
-                <span>
-                    Last card drawn
-                </span>
-
-                <strong>
-                    No card has been
-                    drawn yet
-                </strong>
-            </div>
-        );
-    }
-
-    return (
-        <div className="currentCard">
-            <span>
-                Last card drawn
-            </span>
-
-            <strong>
-                {card.fullName}
-            </strong>
-        </div>
     );
 }
 

@@ -15,7 +15,7 @@ import { DraftedTicketIcon } from "../betting/DraftedTicketIcon";
 
 import { PayoutSummary } from "../betting/PayoutSummary";
 
-import { RaceCardView } from "../cards/RaceCardView";
+import { AnimatedCurrentCard } from "../cards/AnimatedCurrentCard";
 
 import { buildRaceReplay } from "../../replay/buildRaceReplay";
 
@@ -185,26 +185,44 @@ export function RaceReplay({
                         }
                     />
 
-                    <section className="replayCurrentCard">
-                        <h4>
-                            Current card
-                        </h4>
+                    <AnimatedCurrentCard
+                        card={
+                            currentGroup?.cardEvent
+                                ? {
+                                    definitionId:
+                                        currentGroup
+                                            .cardEvent
+                                            .definitionId,
 
-                        {cardDefinition ? (
-                            <RaceCardView
-                                definition={
-                                    cardDefinition
+                                    owner:
+                                        currentGroup
+                                            .cardEvent
+                                            .owner,
+
+                                    name:
+                                        currentGroup
+                                            .cardEvent
+                                            .cardName,
+
+                                    fullName:
+                                        (
+                                            `${currentGroup.cardEvent.owner}: ` +
+                                            `${currentGroup.cardEvent.cardName}`
+                                        )
                                 }
-                                size="compact"
-                                disabled
-                            />
-                        ) : (
-                            <p>
-                                The replay has
-                                not started.
-                            </p>
-                        )}
-                    </section>
+                                : null
+                        }
+                        definition={
+                            cardDefinition
+                        }
+                        animationKey={
+                            currentGroup?.cardEvent
+                                ?.sequence ??
+                            null
+                        }
+                        label="Current replay card"
+                        compact
+                    />
                 </>
             )}
 

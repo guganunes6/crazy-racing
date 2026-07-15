@@ -280,6 +280,10 @@ input::placeholder {
     border-color: #e11d48;
 }
 
+.raceBoardStage {
+    position: relative;
+}
+
 .raceDeckStatus {
     display: flex;
     justify-content: flex-end;

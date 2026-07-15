@@ -3,31 +3,34 @@
 }
 
 .boardFrame {
+    position: relative;
     width: 100%;
     border: 14px solid transparent;
     border-image: url("/src/assets/board/wood-pattern.svg") 30 round;
-    background: #7c4a21;
     border-radius: 22px;
     overflow: hidden;
+    background: #7c4a21;
 }
 
 .boardTitle {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 10px 14px;
     background: #111827;
     color: #facc15;
-    padding: 10px 14px;
     font-weight: 900;
     letter-spacing: 1px;
 }
 
 .boardDeckCounter {
-    font-size: 14px;
     color: #facc15;
+    font-size: 14px;
 }
 
 .trackMat {
+    position: relative;
+    overflow: hidden;
     background-image: linear-gradient( to bottom, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.08) 25%, rgba(0, 0, 0, 0.08) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.08) 75%, rgba(0, 0, 0, 0.08) 75% ), url("/src/assets/board/grass-pattern.svg");
     background-size: auto, 120px 120px;
 }
@@ -46,11 +49,11 @@
 .laneNamePlate {
     display: grid;
     place-items: center;
-    background: rgba(15, 23, 42, 0.75);
     border-right: 4px solid rgba(255, 255, 255, 0.35);
-    font-weight: 900;
-    font-size: 13px;
+    background: rgba(15, 23, 42, 0.75);
     color: white;
+    font-size: 13px;
+    font-weight: 900;
 }
 
 .boardSpace {
@@ -76,9 +79,9 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: rgba(15, 23, 42, 0.65);
         z-index: 10;
         pointer-events: none;
+        background: rgba(15, 23, 42, 0.65);
     }
 
 .foldBoundary {
@@ -88,26 +91,26 @@
 .spaceStar {
     position: absolute;
     inset: 0;
+    z-index: 1;
     display: grid;
     place-items: center;
     color: #facc15;
     font-size: 34px;
     text-shadow: 0 2px 2px black, 0 0 8px rgba(250, 204, 21, 0.7);
-    z-index: 1;
 }
 
 .startFlag {
     position: absolute;
     bottom: 5px;
     left: 50%;
+    z-index: 4;
     transform: translateX(-50%);
+    border-radius: 6px;
+    padding: 2px 5px;
     background: #111827;
     color: white;
     font-size: 10px;
     font-weight: 900;
-    padding: 2px 5px;
-    border-radius: 6px;
-    z-index: 4;
 }
 
 .finishGate {
@@ -115,14 +118,14 @@
     top: 0;
     right: 0;
     bottom: 0;
+    z-index: 4;
     width: 22px;
-    writing-mode: vertical-rl;
-    text-align: center;
+    background: repeating-linear-gradient( 45deg, white, white 7px, black 7px, black 14px );
+    color: #ef4444;
     font-size: 10px;
     font-weight: 900;
-    color: #ef4444;
-    background: repeating-linear-gradient( 45deg, white, white 7px, black 7px, black 14px );
-    z-index: 4;
+    text-align: center;
+    writing-mode: vertical-rl;
 }
 
 .mascotStack {
@@ -139,16 +142,16 @@
 }
 
 .mascotCount1 {
+    top: 1%;
+    left: 1%;
     width: 98%;
     height: 98%;
-    left: 1%;
-    top: 1%;
 }
 
 .mascotCount2 {
+    top: 11%;
     width: 78%;
     height: 78%;
-    top: 11%;
 }
 
     .mascotCount2.mascotIndex0 {
@@ -165,18 +168,18 @@
 }
 
     .mascotCount3.mascotIndex0 {
-        left: 0%;
         top: 0%;
+        left: 0%;
     }
 
     .mascotCount3.mascotIndex1 {
-        left: 36%;
         top: 0%;
+        left: 36%;
     }
 
     .mascotCount3.mascotIndex2 {
-        left: 18%;
         top: 36%;
+        left: 18%;
     }
 
 .mascotCount4 {
@@ -185,23 +188,23 @@
 }
 
     .mascotCount4.mascotIndex0 {
-        left: 0%;
         top: 0%;
+        left: 0%;
     }
 
     .mascotCount4.mascotIndex1 {
-        left: 44%;
         top: 0%;
+        left: 44%;
     }
 
     .mascotCount4.mascotIndex2 {
-        left: 0%;
         top: 44%;
+        left: 0%;
     }
 
     .mascotCount4.mascotIndex3 {
-        left: 44%;
         top: 44%;
+        left: 44%;
     }
 
 .mascot.turnedAround {
@@ -222,17 +225,17 @@
 }
 
 .podiumPanel {
-    background: #111827;
+    margin-top: 18px;
     border: 4px solid #334155;
     border-radius: 18px;
     padding: 12px;
-    margin-top: 18px;
+    background: #111827;
 }
 
     .podiumPanel h3 {
         margin-top: 0;
-        text-align: center;
         color: #facc15;
+        text-align: center;
     }
 
 .podiumSteps {
@@ -243,22 +246,22 @@
 
 .podiumPlace {
     min-height: 82px;
-    border-radius: 12px;
-    background: #1f2937;
-    padding: 6px;
     border: 2px solid #475569;
+    border-radius: 12px;
+    padding: 6px;
+    background: #1f2937;
 }
 
 .place1 {
-    background: linear-gradient(135deg, #facc15, #92400e);
+    background: linear-gradient( 135deg, #facc15, #92400e );
 }
 
 .place2 {
-    background: linear-gradient(135deg, #e5e7eb, #64748b);
+    background: linear-gradient( 135deg, #e5e7eb, #64748b );
 }
 
 .place3 {
-    background: linear-gradient(135deg, #fb923c, #7c2d12);
+    background: linear-gradient( 135deg, #fb923c, #7c2d12 );
 }
 
 .place4 {
@@ -266,8 +269,8 @@
 }
 
 .placeLabel {
-    font-weight: 900;
     color: white;
+    font-weight: 900;
     text-shadow: 0 1px 2px black;
 }
 
@@ -282,12 +285,12 @@
     grid-template-columns: 34px 1fr;
     align-items: center;
     gap: 4px;
-    background: rgba(15, 23, 42, 0.75);
+    width: 100%;
     border-radius: 8px;
     padding: 3px;
+    background: rgba(15, 23, 42, 0.75);
     color: white;
     font-size: 10px;
-    width: 100%;
 }
 
     .podiumRacer img {
@@ -301,10 +304,6 @@
     }
 
 /* Milestone 4: animated racer overlay */
-.trackMat {
-    position: relative;
-    overflow: hidden;
-}
 
 .racerLayer {
     position: absolute;
@@ -319,43 +318,32 @@
 .racerToken {
     --racer-position: 0;
     --racer-lane: 0;
-
     position: absolute;
     top: 0;
     left: 0;
     width: calc(100% / 14);
     height: 25%;
-    transform:
-        translateX(calc(var(--racer-position) * 100%))
-        translateY(calc(var(--racer-lane) * 100%));
-    transition:
-        transform 480ms cubic-bezier(0.22, 0.78, 0.24, 1),
-        opacity 220ms ease,
-        filter 220ms ease;
+    transform: translateX( calc( var(--racer-position) * 100% ) ) translateY( calc( var(--racer-lane) * 100% ) );
+    transition: transform 480ms cubic-bezier( 0.22, 0.78, 0.24, 1 ), opacity 220ms ease, filter 220ms ease;
     will-change: transform;
 }
 
-.racerToken .mascot {
-    position: absolute;
-    object-fit: contain;
-    transform-origin: center;
-    transition:
-        transform 380ms cubic-bezier(0.22, 0.78, 0.24, 1),
-        left 220ms ease,
-        top 220ms ease,
-        width 220ms ease,
-        height 220ms ease,
-        opacity 220ms ease,
-        filter 220ms ease;
-}
+    .racerToken .mascot {
+        position: absolute;
+        object-fit: contain;
+        transform-origin: center;
+        transition: transform 380ms cubic-bezier( 0.22, 0.78, 0.24, 1 ), left 220ms ease, top 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, filter 220ms ease;
+    }
 
-.boardAnimating .boardDeckCounter::before {
+.boardAnimating
+.boardDeckCounter::before {
     content: "LIVE  ";
     color: #22c55e;
     animation: boardLivePulse 900ms ease-in-out infinite;
 }
 
-.racerAnimatingMove {
+.racerAnimatingMove,
+.racerCardAffected {
     filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
 }
 
@@ -364,32 +352,35 @@
     animation: greenCardAffectedGlow 520ms ease-in-out;
 }
 
-.racerCardAffected {
-    filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
-}
-
-.racerAnimatingCrawl .mascot {
+.racerAnimatingCrawl
+.mascot {
     animation: mascotCrawl 420ms ease-in-out;
 }
 
-.racerAnimatingSwerve .mascot {
+.racerAnimatingSwerve
+.mascot {
     animation: mascotSwerve 440ms ease-in-out;
 }
 
-.racerAnimatingFall .mascot,
-.racerAnimatingCollision .mascot {
+.racerAnimatingFall
+.mascot,
+.racerAnimatingCollision
+.mascot {
     animation: mascotImpact 420ms ease-out;
 }
 
-.racerAnimatingRecover .mascot {
+.racerAnimatingRecover
+.mascot {
     animation: mascotRecover 420ms ease-out;
 }
 
-.racerAnimatingTurn .mascot {
+.racerAnimatingTurn
+.mascot {
     animation: mascotTurn 420ms ease-in-out;
 }
 
-.racerAnimatingHit .mascot {
+.racerAnimatingHit
+.mascot {
     animation: mascotHit 360ms ease-out;
 }
 
@@ -401,57 +392,181 @@
     animation: mascotDq 520ms ease-out;
 }
 
+/* Milestone 4: board-wide card reactions */
+
+.boardFrame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.boardReshuffling
+.boardFrame {
+    animation: boardReshuffleShake 650ms ease-in-out;
+}
+
+    .boardReshuffling
+    .boardFrame::after {
+        opacity: 1;
+        background: radial-gradient( circle at center, rgba(56, 189, 248, 0.25), transparent 65% );
+        animation: boardReshuffleFlash 650ms ease-in-out;
+    }
+
+.boardFolding
+.trackMat {
+    animation: trackFoldImpact 650ms cubic-bezier( 0.2, 0.75, 0.25, 1 );
+}
+
+.boardFolding
+.boardFrame::after {
+    opacity: 1;
+    background: linear-gradient( to right, rgba(148, 163, 184, 0.42), transparent 55% );
+    animation: boardFoldSweep 650ms ease-out;
+}
+
+.boardFinishEvent
+.boardFrame::after {
+    opacity: 1;
+    background: radial-gradient( circle at 90% 50%, rgba(250, 204, 21, 0.55), transparent 38% );
+    animation: finishLineCelebration 560ms ease-out;
+}
+
+.boardDqEvent
+.boardFrame::after {
+    opacity: 1;
+    background: repeating-linear-gradient( -45deg, rgba(239, 68, 68, 0.24), rgba(239, 68, 68, 0.24) 12px, transparent 12px, transparent 24px );
+    animation: dqBoardFlash 520ms ease-out;
+}
+
 @keyframes boardLivePulse {
-    0%, 100% { opacity: 0.55; }
-    50% { opacity: 1; }
+    0%, 100% {
+        opacity: 0.55;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 @keyframes mascotCrawl {
-    0%, 100% { transform: translateY(0); }
-    35% { transform: translateY(8%) rotate(3deg); }
-    70% { transform: translateY(-4%) rotate(-2deg); }
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    35% {
+        transform: translateY(8%) rotate(3deg);
+    }
+
+    70% {
+        transform: translateY(-4%) rotate(-2deg);
+    }
 }
 
 @keyframes mascotSwerve {
-    0%, 100% { filter: brightness(1); }
-    45% { filter: brightness(1.35); }
+    0%, 100% {
+        filter: brightness(1);
+    }
+
+    45% {
+        filter: brightness(1.35);
+    }
 }
 
 @keyframes mascotImpact {
-    0% { filter: brightness(1); }
-    25% { filter: brightness(1.7); }
-    55% { filter: brightness(0.8); }
-    100% { filter: brightness(1); }
+    0% {
+        filter: brightness(1);
+    }
+
+    25% {
+        filter: brightness(1.7);
+    }
+
+    55% {
+        filter: brightness(0.8);
+    }
+
+    100% {
+        filter: brightness(1);
+    }
 }
 
 @keyframes mascotRecover {
-    0% { filter: brightness(0.75); }
-    55% { filter: brightness(1.5); }
-    100% { filter: brightness(1); }
+    0% {
+        filter: brightness(0.75);
+    }
+
+    55% {
+        filter: brightness(1.5);
+    }
+
+    100% {
+        filter: brightness(1);
+    }
 }
 
 @keyframes mascotTurn {
-    0% { filter: brightness(1); }
-    50% { filter: brightness(1.4); }
-    100% { filter: brightness(1); }
+    0% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.4);
+    }
+
+    100% {
+        filter: brightness(1);
+    }
 }
 
 @keyframes mascotHit {
-    0%, 100% { transform: translateX(0); }
-    35% { transform: translateX(8%); }
-    70% { transform: translateX(-4%); }
+    0%, 100% {
+        transform: translateX(0);
+    }
+
+    35% {
+        transform: translateX(8%);
+    }
+
+    70% {
+        transform: translateX(-4%);
+    }
 }
 
 @keyframes mascotFinish {
-    0% { opacity: 1; filter: brightness(1); }
-    60% { opacity: 1; filter: brightness(1.8); }
-    100% { opacity: 0; filter: brightness(2); }
+    0% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+
+    60% {
+        opacity: 1;
+        filter: brightness(1.8);
+    }
+
+    100% {
+        opacity: 0;
+        filter: brightness(2);
+    }
 }
 
 @keyframes mascotDq {
-    0% { opacity: 1; filter: grayscale(0); }
-    45% { opacity: 0.8; filter: grayscale(1); }
-    100% { opacity: 0; filter: grayscale(1); }
+    0% {
+        opacity: 1;
+        filter: grayscale(0);
+    }
+
+    45% {
+        opacity: 0.8;
+        filter: grayscale(1);
+    }
+
+    100% {
+        opacity: 0;
+        filter: grayscale(1);
+    }
 }
 
 @keyframes greenCardAffectedGlow {
@@ -464,14 +579,124 @@
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@keyframes boardReshuffleShake {
+    0%, 100% {
+        transform: translateX(0) rotate(0deg);
+    }
+
+    20% {
+        transform: translateX(-5px) rotate(-0.3deg);
+    }
+
+    40% {
+        transform: translateX(5px) rotate(0.3deg);
+    }
+
+    60% {
+        transform: translateX(-3px) rotate(-0.2deg);
+    }
+
+    80% {
+        transform: translateX(3px) rotate(0.2deg);
+    }
+}
+
+@keyframes boardReshuffleFlash {
+    0%, 100% {
+        opacity: 0;
+    }
+
+    45% {
+        opacity: 1;
+    }
+}
+
+@keyframes trackFoldImpact {
+    0% {
+        transform: scaleX(1);
+        filter: brightness(1);
+    }
+
+    45% {
+        transform: scaleX(0.975);
+        filter: brightness(1.35);
+    }
+
+    100% {
+        transform: scaleX(1);
+        filter: brightness(1);
+    }
+}
+
+@keyframes boardFoldSweep {
+    0% {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+
+    45% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+@keyframes finishLineCelebration {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    45% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes dqBoardFlash {
+    0%, 100% {
+        opacity: 0;
+    }
+
+    35%, 65% {
+        opacity: 1;
+    }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
     .racerToken,
-    .racerToken .mascot {
+    .racerToken
+    .mascot {
         transition-duration: 1ms;
         animation-duration: 1ms !important;
     }
 
-    .boardAnimating .boardDeckCounter::before {
+    .boardAnimating
+    .boardDeckCounter::before {
         animation: none;
+    }
+
+    .boardReshuffling
+    .boardFrame,
+    .boardReshuffling
+    .boardFrame::after,
+    .boardFolding
+    .trackMat,
+    .boardFolding
+    .boardFrame::after,
+    .boardFinishEvent
+    .boardFrame::after,
+    .boardDqEvent
+    .boardFrame::after,
+    .racerGreenAffected {
+        animation-duration: 1ms !important;
     }
 }

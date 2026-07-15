@@ -28,6 +28,7 @@ import {
     shuffle
 } from "./engine/Deck.js";
 import { RaceEngine } from "./engine/RaceEngine.js";
+import { recordRaceEvent } from "./engine/RaceEvents.js";
 import { reshuffleRaceDeck } from "./engine/Reshuffle.js";
 import { startBettingDraft } from "./betting/BettingDraft.js";
 import { processRacePayouts } from "./betting/PayoutEngine.js";
@@ -356,7 +357,27 @@ export function beginRace(
     }
 
     room.podium = [];
-    prepareDeckForRace(room);
+    const burnedCards =
+        prepareDeckForRace(
+            room
+        );
+
+    recordRaceEvent(room, {
+        type: "CARDS_BURNED",
+
+        reason:
+            "RACE_START",
+
+        cards:
+            burnedCards.map(
+                (card) => ({
+                    id: card.id,
+                    definitionId:
+                        card.definitionId
+                })
+            )
+    });
+
     room.phase = "racing";
 }
 

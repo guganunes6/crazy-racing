@@ -113,21 +113,6 @@
         color: #facc15;
     }
 
-.replayCurrentCard {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-
-    .replayCurrentCard h4 {
-        margin: 0;
-    }
-
-    .replayCurrentCard p {
-        color: #94a3b8;
-    }
-
 .replayControls {
     display: flex;
     justify-content: center;

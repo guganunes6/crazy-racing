@@ -6,6 +6,10 @@ import {
     useState
 } from "react";
 
+import {
+    CARD_REVEAL_DURATION_MS
+} from "../animation/AnimationTiming";
+
 import type {
     RaceReplayModel,
     ReplayFrame,
@@ -16,7 +20,8 @@ const BASE_FRAME_DURATION =
     600;
 
 type UseRaceReplayOptions = {
-    model: RaceReplayModel;
+    model:
+    RaceReplayModel;
 };
 
 export function useRaceReplay({
@@ -27,6 +32,11 @@ export function useRaceReplay({
         setCardGroupIndex
     ] = useState(-1);
 
+    /*
+     * -1 means that the card is visible and
+     * flipping, but its first consequence frame
+     * has not yet been applied.
+     */
     const [
         frameIndex,
         setFrameIndex
@@ -44,6 +54,11 @@ export function useRaceReplay({
         setIsPlaying
     ] = useState(false);
 
+    const [
+        isRevealingCard,
+        setIsRevealingCard
+    ] = useState(false);
+
     const timerRef =
         useRef<number | null>(
             null
@@ -58,33 +73,68 @@ export function useRaceReplay({
             )
             : null;
 
-    const currentFrame =
-        useMemo<ReplayFrame>(
-            () => {
-                if (!currentGroup) {
-                    return (
-                        model.initialFrame
-                    );
-                }
-
+    const previousVisualFrame =
+        useMemo<ReplayFrame>(() => {
+            if (
+                cardGroupIndex <= 0
+            ) {
                 return (
-                    currentGroup.frames[
-                    frameIndex
-                    ] ??
-                    currentGroup.frames[
-                    currentGroup
-                        .frames
-                        .length - 1
-                    ] ??
                     model.initialFrame
                 );
-            },
-            [
-                currentGroup,
-                frameIndex,
+            }
+
+            const previousGroup =
+                model.cardGroups[
+                cardGroupIndex - 1
+                ];
+
+            return (
+                previousGroup?.frames[
+                previousGroup
+                    .frames
+                    .length - 1
+                ] ??
                 model.initialFrame
-            ]
-        );
+            );
+        }, [
+            cardGroupIndex,
+            model.cardGroups,
+            model.initialFrame
+        ]);
+
+    const currentFrame =
+        useMemo<ReplayFrame>(() => {
+            if (!currentGroup) {
+                return (
+                    model.initialFrame
+                );
+            }
+
+            if (
+                frameIndex < 0
+            ) {
+                return (
+                    previousVisualFrame
+                );
+            }
+
+            return (
+                currentGroup.frames[
+                frameIndex
+                ] ??
+                currentGroup.frames[
+                currentGroup
+                    .frames
+                    .length - 1
+                ] ??
+                previousVisualFrame
+            );
+        }, [
+            currentGroup,
+            frameIndex,
+            model.initialFrame,
+            previousVisualFrame
+        ]);
 
     const visibleLogEntries =
         useMemo(() => {
@@ -118,9 +168,15 @@ export function useRaceReplay({
                         ? frameIndex
                         : (
                             group.frames
-                                .length -
-                            1
+                                .length - 1
                         );
+
+                if (
+                    maximumFrameIndex <
+                    0
+                ) {
+                    continue;
+                }
 
                 for (
                     let currentFrameIndex =
@@ -164,8 +220,10 @@ export function useRaceReplay({
 
     const finalFrameIndex =
         finalGroup
-            ? finalGroup.frames
-                .length - 1
+            ? (
+                finalGroup.frames
+                    .length - 1
+            )
             : -1;
 
     const isReplayComplete =
@@ -173,7 +231,8 @@ export function useRaceReplay({
         cardGroupIndex ===
         finalGroupIndex &&
         frameIndex ===
-        finalFrameIndex;
+        finalFrameIndex &&
+        !isRevealingCard;
 
     const clearTimer =
         useCallback(() => {
@@ -195,6 +254,7 @@ export function useRaceReplay({
             clearTimer();
 
             setIsPlaying(false);
+            setIsRevealingCard(false);
             setCardGroupIndex(-1);
             setFrameIndex(0);
         }, [clearTimer]);
@@ -203,7 +263,24 @@ export function useRaceReplay({
         useCallback(() => {
             clearTimer();
             setIsPlaying(false);
+            setIsRevealingCard(false);
         }, [clearTimer]);
+
+    const beginCardReveal =
+        useCallback(
+            (
+                nextGroupIndex:
+                    number
+            ) => {
+                setCardGroupIndex(
+                    nextGroupIndex
+                );
+
+                setFrameIndex(-1);
+                setIsRevealingCard(true);
+            },
+            []
+        );
 
     const moveToNextFrame =
         useCallback((): boolean => {
@@ -217,9 +294,7 @@ export function useRaceReplay({
             if (
                 cardGroupIndex < 0
             ) {
-                setCardGroupIndex(0);
-                setFrameIndex(0);
-
+                beginCardReveal(0);
                 return true;
             }
 
@@ -230,6 +305,18 @@ export function useRaceReplay({
 
             if (!group) {
                 return false;
+            }
+
+            if (
+                frameIndex < 0
+            ) {
+                setIsRevealingCard(
+                    false
+                );
+
+                setFrameIndex(0);
+
+                return true;
             }
 
             if (
@@ -248,21 +335,18 @@ export function useRaceReplay({
             if (
                 cardGroupIndex <
                 model.cardGroups
-                    .length -
-                1
+                    .length - 1
             ) {
-                setCardGroupIndex(
-                    (current) =>
-                        current + 1
+                beginCardReveal(
+                    cardGroupIndex + 1
                 );
-
-                setFrameIndex(0);
 
                 return true;
             }
 
             return false;
         }, [
+            beginCardReveal,
             cardGroupIndex,
             frameIndex,
             model.cardGroups
@@ -277,13 +361,10 @@ export function useRaceReplay({
                 return;
             }
 
-            /*
-             * Playing after completion starts
-             * the replay again.
-             */
-            if (isReplayComplete) {
-                setCardGroupIndex(-1);
-                setFrameIndex(0);
+            if (
+                isReplayComplete
+            ) {
+                return;
             }
 
             setIsPlaying(true);
@@ -296,6 +377,7 @@ export function useRaceReplay({
         useCallback(() => {
             clearTimer();
             setIsPlaying(false);
+            setIsRevealingCard(false);
 
             if (
                 cardGroupIndex <= 0
@@ -339,6 +421,7 @@ export function useRaceReplay({
         useCallback(() => {
             clearTimer();
             setIsPlaying(false);
+            setIsRevealingCard(false);
 
             const nextIndex =
                 cardGroupIndex < 0
@@ -388,6 +471,18 @@ export function useRaceReplay({
 
         clearTimer();
 
+        const duration =
+            isRevealingCard ||
+                frameIndex < 0
+                ? (
+                    CARD_REVEAL_DURATION_MS /
+                    speed
+                )
+                : (
+                    BASE_FRAME_DURATION /
+                    speed
+                );
+
         timerRef.current =
             window.setTimeout(
                 () => {
@@ -400,15 +495,16 @@ export function useRaceReplay({
                         );
                     }
                 },
-                BASE_FRAME_DURATION /
-                speed
+                duration
             );
 
         return clearTimer;
     }, [
         clearTimer,
         currentFrame.id,
+        frameIndex,
         isPlaying,
+        isRevealingCard,
         moveToNextFrame,
         speed
     ]);
@@ -437,6 +533,7 @@ export function useRaceReplay({
         setSpeed,
 
         isPlaying,
+        isRevealingCard,
         isReplayComplete,
 
         play,
