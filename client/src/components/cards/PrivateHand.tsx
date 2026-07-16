@@ -2,9 +2,11 @@ import {
     CARD_CATALOG_BY_ID,
     type RaceCard
 } from "@crazy-racing/shared";
+
 import {
     RaceCardView
 } from "./RaceCardView";
+
 import "./PrivateHand.css";
 
 type PrivateHandProps = {
@@ -26,9 +28,20 @@ export function PrivateHand({
 }: PrivateHandProps) {
     return (
         <section className="privateHand">
-            <h3>Your private hand</h3>
+            <header className="privateHandHeader">
+                <h3>
+                    Your private hand
+                </h3>
 
-            <div className="privateHandGrid">
+                <span>
+                    {cards.length}{" "}
+                    {cards.length === 1
+                        ? "card"
+                        : "cards"}
+                </span>
+            </header>
+
+            <div className="privateHandCards">
                 {cards.map((card) => {
                     const definition =
                         CARD_CATALOG_BY_ID[
@@ -39,34 +52,105 @@ export function PrivateHand({
                         return null;
                     }
 
+                    const selected =
+                        selectedCardIds.includes(
+                            card.id
+                        );
+
+                    const cardDisabled =
+                        disabled ||
+                        !selectable;
+
+                    function handleSelect() {
+                        if (cardDisabled) {
+                            return;
+                        }
+
+                        onToggleCard?.(
+                            card.id
+                        );
+                    }
+
+                    function handleKeyDown(
+                        event:
+                            React.KeyboardEvent<HTMLDivElement>
+                    ) {
+                        if (
+                            event.key !== "Enter" &&
+                            event.key !== " "
+                        ) {
+                            return;
+                        }
+
+                        event.preventDefault();
+                        handleSelect();
+                    }
+
                     return (
-                        <RaceCardView
+                        <div
                             key={card.id}
-                            definition={
-                                definition
+                            role={
+                                cardDisabled
+                                    ? undefined
+                                    : "button"
                             }
-                            size="compact"
-                            selected={
-                                selectedCardIds.includes(
-                                    card.id
-                                )
+                            tabIndex={
+                                cardDisabled
+                                    ? -1
+                                    : 0
                             }
-                            disabled={
-                                disabled ||
-                                !selectable
+                            aria-disabled={
+                                cardDisabled
                             }
-                            onClick={
+                            aria-pressed={
                                 selectable
-                                    ? () =>
-                                        onToggleCard?.(
-                                            card.id
-                                        )
+                                    ? selected
                                     : undefined
                             }
-                        />
+                            className={[
+                                "privateHandCard",
+
+                                selected
+                                    ? "privateHandCardSelected"
+                                    : "",
+
+                                cardDisabled
+                                    ? "privateHandCardDisabled"
+                                    : "",
+
+                                disabled
+                                    ? "privateHandCardSubmitted"
+                                    : ""
+                            ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            onClick={
+                                handleSelect
+                            }
+                            onKeyDown={
+                                handleKeyDown
+                            }
+                        >
+                            <RaceCardView
+                                definition={
+                                    definition
+                                }
+                                size="compact"
+                                selected={
+                                    selected
+                                }
+                            />
+                        </div>
                     );
                 })}
             </div>
+
+            {cards.length === 0 && (
+                <p className="privateHandEmpty">
+                    There are no cards in your
+                    private hand.
+                </p>
+            )}
         </section>
     );
 }

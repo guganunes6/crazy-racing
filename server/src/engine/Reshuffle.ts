@@ -2,14 +2,20 @@ import {
     BOARD,
     visibleStart
 } from "@crazy-racing/shared";
-import type { Room } from "../gameLogic.js";
+
+import type {
+    Room
+} from "../gameLogic.js";
+
 import {
     rebuildDeckFromDiscard
 } from "./Deck.js";
+
 import {
     checkRaceEnd,
     disqualifyRacersTogether
 } from "./Podium.js";
+
 import {
     recordRaceEvent,
     recordRaceState
@@ -27,20 +33,39 @@ export function reshuffleRaceDeck(
         );
     }
 
-    rebuildDeckFromDiscard(
-        room
-    );
+    const cardCountBeforeBurn =
+        room.discard.length;
+
+    const burnedCards =
+        rebuildDeckFromDiscard(
+            room
+        );
 
     recordRaceEvent(room, {
-        type:
-            "DECK_RESHUFFLED",
+        type: "DECK_RESHUFFLED",
+
         cardCount:
-            room.deck.length +
-            room.discard.length,
+            cardCountBeforeBurn,
+
         burnedCardCount:
-            Math.min(
-                3,
-                room.discard.length
+            burnedCards.length
+    });
+
+    recordRaceEvent(room, {
+        type: "CARDS_BURNED",
+
+        reason:
+            "RESHUFFLE",
+
+        cards:
+            burnedCards.map(
+                (card) => ({
+                    id:
+                        card.id,
+
+                    definitionId:
+                        card.definitionId
+                })
             )
     });
 
@@ -69,8 +94,10 @@ export function reshuffleRaceDeck(
             racersUnderFold.map(
                 (racer) => ({
                     racer,
+
                     reason:
                         "was underneath the folded section of the track",
+
                     reasonCode:
                         "fold" as const
                 })
@@ -78,10 +105,14 @@ export function reshuffleRaceDeck(
         );
 
         recordRaceEvent(room, {
-            type: "TRACK_FOLDED",
+            type:
+                "TRACK_FOLDED",
+
             foldLevel:
                 room.shortenedBy,
+
             newStartPosition,
+
             disqualifiedRacers:
                 racersUnderFold.map(
                     (racer) =>
@@ -96,6 +127,7 @@ export function reshuffleRaceDeck(
     }
 
     if (!checkRaceEnd(room)) {
-        room.phase = "racing";
+        room.phase =
+            "racing";
     }
 }

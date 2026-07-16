@@ -84,6 +84,18 @@ export type RaceEventPayload =
         burnedCardCount: number;
     }
     | {
+        type: "CARDS_BURNED";
+
+        reason:
+        | "RACE_START"
+        | "RESHUFFLE";
+
+        cards: Array<{
+            id: string;
+            definitionId: string;
+        }>;
+    }
+    | {
         type: "TRACK_FOLDED";
         foldLevel: number;
         newStartPosition: number;

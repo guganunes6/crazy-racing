@@ -159,25 +159,36 @@ export function discardCard(
 
 export function burnThreeCards(
     room: Room
-): void {
+): RaceCard[] {
     const burnedCards =
-        room.deck.splice(0, 3);
+        room.deck.splice(
+            0,
+            Math.min(
+                3,
+                room.deck.length
+            )
+        );
 
     room.discard.push(
         ...burnedCards
     );
+
+    return burnedCards;
 }
 
 export function prepareDeckForRace(
     room: Room
-): void {
+): RaceCard[] {
     shuffle(room.deck);
-    burnThreeCards(room);
+
+    return burnThreeCards(
+        room
+    );
 }
 
 export function rebuildDeckFromDiscard(
     room: Room
-): void {
+): RaceCard[] {
     room.deck = [
         ...room.discard
     ];
@@ -185,7 +196,10 @@ export function rebuildDeckFromDiscard(
     room.discard = [];
 
     shuffle(room.deck);
-    burnThreeCards(room);
+
+    return burnThreeCards(
+        room
+    );
 }
 
 export function shuffle<T>(

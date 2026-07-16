@@ -1,17 +1,23 @@
-import {
+﻿import {
     BOARD,
     visibleStart,
     type RacerState
 } from "@crazy-racing/shared";
-import type { Room } from "../gameLogic.js";
+
+import type {
+    Room
+} from "../gameLogic.js";
+
 import {
     resolveCollisions
 } from "./Collision.js";
+
 import {
     disqualifyRacer,
     disqualifyRacersTogether,
     finishRacer
 } from "./Podium.js";
+
 import {
     recordRaceEvent,
     recordRaceState
@@ -37,11 +43,16 @@ export function moveRacer(
         return;
     }
 
-    const startingPosition = racer.position;
-    const crawling = racer.fallen;
-    const effectiveValue = crawling
-        ? Math.sign(value)
-        : value;
+    const startingPosition =
+        racer.position;
+
+    const crawling =
+        racer.fallen;
+
+    const effectiveValue =
+        crawling
+            ? Math.sign(value)
+            : value;
 
     const movementDirection =
         effectiveValue >= 0
@@ -50,20 +61,29 @@ export function moveRacer(
                 ? -1
                 : 1;
 
-    const numberOfSteps = Math.abs(effectiveValue);
+    const numberOfSteps =
+        Math.abs(
+            effectiveValue
+        );
+
     let actualSteps = 0;
+    let collisionOccurred = false;
 
     for (
         let step = 0;
         step < numberOfSteps;
-        step++
+        step += 1
     ) {
-        racer.position += movementDirection;
+        racer.position +=
+            movementDirection;
+
         actualSteps += 1;
 
         if (
             racer.position <
-            visibleStart(room.shortenedBy)
+            visibleStart(
+                room.shortenedBy
+            )
         ) {
             disqualifyRacer(
                 room,
@@ -76,21 +96,29 @@ export function moveRacer(
         }
 
         /*
-         * The finish line lies between positions 12 and 13.
-         * Green cards may move up to position 12, but cannot
-         * cross into position 13.
+         * The finish line lies between positions
+         * BOARD.finishPosition - 1 and
+         * BOARD.finishPosition.
+         *
+         * Cards that cannot finish may only move as far
+         * as the final track space.
          */
         if (
             !options.canFinish &&
-            racer.position >= BOARD.finishPosition
+            racer.position >=
+            BOARD.finishPosition
         ) {
-            racer.position = BOARD.finishPosition - 1;
+            racer.position =
+                BOARD.finishPosition -
+                1;
+
             break;
         }
 
         if (
             options.canFinish &&
-            racer.position >= BOARD.finishPosition
+            racer.position >=
+            BOARD.finishPosition
         ) {
             recordMovement(
                 room,
@@ -104,12 +132,32 @@ export function moveRacer(
                 true
             );
 
-            finishRacer(room, racer);
+            if (
+                collisionOccurred
+            ) {
+                recordRaceState(
+                    room,
+                    "COLLISION"
+                );
+            }
+
+            finishRacer(
+                room,
+                racer
+            );
+
             return;
         }
 
-        if (options.canCollide) {
-            resolveCollisions(room, racer);
+        if (
+            options.canCollide
+        ) {
+            collisionOccurred =
+                resolveCollisions(
+                    room,
+                    racer
+                ) ||
+                collisionOccurred;
         }
 
         if (
@@ -120,6 +168,11 @@ export function moveRacer(
         }
     }
 
+    /*
+ * First record the completed movement and its snapshot.
+ * The client can now animate from startingPosition to
+ * racer.position without seeing the destination early.
+ */
     recordMovement(
         room,
         racer,
@@ -131,13 +184,36 @@ export function moveRacer(
         options,
         true
     );
+
+    /*
+     * Apply the collision visual state only after the
+     * movement animation snapshot.
+     */
+    if (
+        collisionOccurred
+    ) {
+        recordRaceState(
+            room,
+            "COLLISION"
+        );
+    }
 }
 
 /**
- * Green cards affect every active mascot simultaneously.
- * They cannot collide or finish, but can still send racers
- * off the back of the track. Racers DQed by the same green
- * card movement therefore share a podium place.
+ * Green cards affect every active mascot.
+ *
+ * Their gameplay effect is simultaneous:
+ *
+ * - no collisions;
+ * - no finishing;
+ * - racers moving beyond the rear boundary are
+ *   disqualified together and receive the same
+ *   podium position.
+ *
+ * For presentation purposes, every mascot receives
+ * its own RACER_MOVED event followed immediately by
+ * its own RACE_STATE snapshot. This allows the client
+ * to animate Lion, Hotdog, Fish and Queen separately.
  */
 export function moveGreenRacersSimultaneously(
     room: Room,
@@ -147,10 +223,14 @@ export function moveGreenRacersSimultaneously(
     const disqualifications: Array<{
         racer: RacerState;
         reason: string;
-        reasonCode: "back-out-of-bounds";
+        reasonCode:
+        "back-out-of-bounds";
     }> = [];
 
-    for (const racer of racers) {
+    for (
+        const racer
+        of racers
+    ) {
         if (
             racer.finished ||
             racer.dq ||
@@ -159,11 +239,16 @@ export function moveGreenRacersSimultaneously(
             continue;
         }
 
-        const startingPosition = racer.position;
-        const crawling = racer.fallen;
-        const effectiveValue = crawling
-            ? Math.sign(value)
-            : value;
+        const startingPosition =
+            racer.position;
+
+        const crawling =
+            racer.fallen;
+
+        const effectiveValue =
+            crawling
+                ? Math.sign(value)
+                : value;
 
         const movementDirection =
             effectiveValue >= 0
@@ -172,38 +257,63 @@ export function moveGreenRacersSimultaneously(
                     ? -1
                     : 1;
 
-        const numberOfSteps = Math.abs(effectiveValue);
+        const numberOfSteps =
+            Math.abs(
+                effectiveValue
+            );
+
         let actualSteps = 0;
 
         for (
             let step = 0;
             step < numberOfSteps;
-            step++
+            step += 1
         ) {
-            racer.position += movementDirection;
+            racer.position +=
+                movementDirection;
+
             actualSteps += 1;
 
             if (
                 racer.position <
-                visibleStart(room.shortenedBy)
+                visibleStart(
+                    room.shortenedBy
+                )
             ) {
                 disqualifications.push({
                     racer,
-                    reason: "moved off the back of the track",
-                    reasonCode: "back-out-of-bounds"
+
+                    reason:
+                        "moved off the back of the track",
+
+                    reasonCode:
+                        "back-out-of-bounds"
                 });
+
                 break;
             }
 
+            /*
+             * Green cards cannot finish.
+             * A mascot stops on the final track space.
+             */
             if (
                 racer.position >=
                 BOARD.finishPosition
             ) {
-                racer.position = BOARD.finishPosition - 1;
+                racer.position =
+                    BOARD.finishPosition -
+                    1;
+
                 break;
             }
         }
 
+        /*
+         * Record the complete movement for this mascot.
+         * The client divides fromPosition → toPosition
+         * into individual visual steps.
+         */
         recordMovement(
             room,
             racer,
@@ -218,14 +328,29 @@ export function moveGreenRacersSimultaneously(
             },
             false
         );
+
+        /*
+         * This snapshot must immediately follow the
+         * corresponding RACER_MOVED event.
+         *
+         * Without it, only the final RACER_MOVED event
+         * — Queen in the normal racer order — is paired
+         * with the single final snapshot.
+         */
+        recordRaceState(
+            room,
+            "MOVE"
+        );
     }
 
+    /*
+     * DQs are applied together after every mascot has
+     * completed the shared green-card movement.
+     */
     disqualifyRacersTogether(
         room,
         disqualifications
     );
-
-    recordRaceState(room, "MOVE");
 }
 
 export function moveRacerToNextStar(
@@ -240,27 +365,43 @@ export function moveRacerToNextStar(
         return;
     }
 
-    const stars = [...BOARD.stars].sort(
-        (first, second) =>
-            racer.facing === 1
-                ? first - second
-                : second - first
-    );
+    const stars =
+        [...BOARD.stars].sort(
+            (
+                first,
+                second
+            ) =>
+                racer.facing === 1
+                    ? first -
+                    second
+                    : second -
+                    first
+        );
 
-    const destination = stars.find(
-        (starPosition) =>
-            racer.facing === 1
-                ? starPosition > racer.position
-                : starPosition < racer.position
-    );
+    const destination =
+        stars.find(
+            (
+                starPosition
+            ) =>
+                racer.facing === 1
+                    ? starPosition >
+                    racer.position
+                    : starPosition <
+                    racer.position
+        );
 
-    if (destination === undefined) {
+    if (
+        destination ===
+        undefined
+    ) {
         return;
     }
 
-    const distance = Math.abs(
-        destination - racer.position
-    );
+    const distance =
+        Math.abs(
+            destination -
+            racer.position
+        );
 
     moveRacer(
         room,
@@ -274,7 +415,9 @@ export function moveRacerToNextStar(
 export function swerveRacer(
     room: Room,
     racer: RacerState,
-    relativeDirection: "LEFT" | "RIGHT",
+    relativeDirection:
+        | "LEFT"
+        | "RIGHT",
     canCollide: boolean,
     recordState = true
 ): void {
@@ -285,20 +428,26 @@ export function swerveRacer(
         return;
     }
 
-    const fromLane = racer.lane;
+    const fromLane =
+        racer.lane;
+
     const baseLaneDelta =
-        relativeDirection === "LEFT"
+        relativeDirection ===
+            "LEFT"
             ? -1
             : 1;
 
     const actualLaneDelta =
-        baseLaneDelta * racer.facing;
+        baseLaneDelta *
+        racer.facing;
 
-    racer.lane += actualLaneDelta;
+    racer.lane +=
+        actualLaneDelta;
 
     if (
         racer.lane < 0 ||
-        racer.lane >= BOARD.laneCount
+        racer.lane >=
+        BOARD.laneCount
     ) {
         disqualifyRacer(
             room,
@@ -310,21 +459,44 @@ export function swerveRacer(
         return;
     }
 
-    recordRaceEvent(room, {
-        type: "RACER_SWERVED",
-        racer: racer.name,
-        fromLane,
-        toLane: racer.lane,
-        position: racer.position,
-        direction: relativeDirection
-    });
+    recordRaceEvent(
+        room,
+        {
+            type:
+                "RACER_SWERVED",
 
-    if (canCollide) {
-        resolveCollisions(room, racer);
+            racer:
+                racer.name,
+
+            fromLane,
+
+            toLane:
+                racer.lane,
+
+            position:
+                racer.position,
+
+            direction:
+                relativeDirection
+        }
+    );
+
+    if (
+        canCollide
+    ) {
+        resolveCollisions(
+            room,
+            racer
+        );
     }
 
-    if (recordState) {
-        recordRaceState(room, "SWERVE");
+    if (
+        recordState
+    ) {
+        recordRaceState(
+            room,
+            "SWERVE"
+        );
     }
 }
 
@@ -339,22 +511,50 @@ function recordMovement(
     options: MovementOptions,
     recordState: boolean
 ): void {
-    recordRaceEvent(room, {
-        type: "RACER_MOVED",
-        racer: racer.name,
-        fromPosition: startingPosition,
-        toPosition: racer.position,
-        lane: racer.lane,
-        requestedDistance,
-        actualDistance: actualSteps,
-        facing: racer.facing,
-        crawling,
-        moveToStar,
-        collisionsEnabled: options.canCollide,
-        finishingEnabled: options.canFinish
-    });
+    recordRaceEvent(
+        room,
+        {
+            type:
+                "RACER_MOVED",
 
-    if (recordState) {
-        recordRaceState(room, "MOVE");
+            racer:
+                racer.name,
+
+            fromPosition:
+                startingPosition,
+
+            toPosition:
+                racer.position,
+
+            lane:
+                racer.lane,
+
+            requestedDistance,
+
+            actualDistance:
+                actualSteps,
+
+            facing:
+                racer.facing,
+
+            crawling,
+
+            moveToStar,
+
+            collisionsEnabled:
+                options.canCollide,
+
+            finishingEnabled:
+                options.canFinish
+        }
+    );
+
+    if (
+        recordState
+    ) {
+        recordRaceState(
+            room,
+            "MOVE"
+        );
     }
 }

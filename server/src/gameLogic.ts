@@ -8,6 +8,7 @@ import {
     SECRET_CARDS_TWO_PLAYERS,
     SECRET_CARDS_OTHER,
     type BettingDraftState,
+    type CompletedRaceReplay,
     type DraftedBetTicket,
     type PodiumEntry,
     type RaceCard,
@@ -27,6 +28,7 @@ import {
     shuffle
 } from "./engine/Deck.js";
 import { RaceEngine } from "./engine/RaceEngine.js";
+import { recordRaceEvent } from "./engine/RaceEvents.js";
 import { reshuffleRaceDeck } from "./engine/Reshuffle.js";
 import { startBettingDraft } from "./betting/BettingDraft.js";
 import { processRacePayouts } from "./betting/PayoutEngine.js";
@@ -40,6 +42,7 @@ export type GamePhase =
     | "ready-to-race"
     | "racing"
     | "reshuffle-required"
+    | "race-complete"
     | "payouts"
     | "final";
 
@@ -75,6 +78,8 @@ export type Room = {
 
     racePayoutProcessed: boolean;
     payoutSummary: RacePayoutSummary | null;
+
+    completedRaceReplays: CompletedRaceReplay[];
 
     currentCard: RaceCard | null;
     deck: RaceCard[];
@@ -119,6 +124,8 @@ export function createRoom(
 
         racePayoutProcessed: false,
         payoutSummary: null,
+
+        completedRaceReplays: [],
 
         currentCard: null,
         deck: [],
@@ -240,6 +247,8 @@ export function startGame(
     room.availableCards =
         createCompleteCardSupply();
 
+    room.completedRaceReplays = [];
+
     setupFirstRace(room);
 }
 
@@ -348,7 +357,27 @@ export function beginRace(
     }
 
     room.podium = [];
-    prepareDeckForRace(room);
+    const burnedCards =
+        prepareDeckForRace(
+            room
+        );
+
+    recordRaceEvent(room, {
+        type: "CARDS_BURNED",
+
+        reason:
+            "RACE_START",
+
+        cards:
+            burnedCards.map(
+                (card) => ({
+                    id: card.id,
+                    definitionId:
+                        card.definitionId
+                })
+            )
+    });
+
     room.phase = "racing";
 }
 
@@ -358,20 +387,38 @@ export function stepRace(
     const engine =
         new RaceEngine(room);
 
-    const card =
-        engine.playNextCard();
-
-    processPayoutsIfRaceEnded(room);
-
-    return card;
+    return engine.playNextCard();
 }
 
 export function reshuffleRace(
     room: Room
 ): void {
     reshuffleRaceDeck(room);
+}
 
-    processPayoutsIfRaceEnded(room);
+export function confirmRaceResults(
+    room: Room
+): void {
+    if (
+        room.phase !==
+        "race-complete"
+    ) {
+        throw new Error(
+            "The race results are not ready to be checked."
+        );
+    }
+
+    /*
+     * Calculate payouts only after the host confirms that
+     * everyone has finished watching the last card.
+     */
+    if (!room.racePayoutProcessed) {
+        processRacePayouts(room);
+    }
+
+    archiveCompletedRaceReplay(room);
+
+    room.phase = "payouts";
 }
 
 export function finishPayouts(
@@ -386,6 +433,8 @@ export function finishPayouts(
     if (!room.racePayoutProcessed) {
         processRacePayouts(room);
     }
+
+    archiveCompletedRaceReplay(room);
 
     if (room.raceNumber >= 3) {
         room.phase = "final";
@@ -509,6 +558,8 @@ export function restartGame(
 
     room.racePayoutProcessed = false;
     room.payoutSummary = null;
+
+    room.completedRaceReplays = [];
 
     room.currentCard = null;
     room.deck = [];
@@ -784,13 +835,150 @@ function drawRandomSideBet(
     return selectedSideBet;
 }
 
-function processPayoutsIfRaceEnded(
+function archiveCompletedRaceReplay(
     room: Room
 ): void {
-    if (
-        room.phase === "payouts" &&
-        !room.racePayoutProcessed
-    ) {
-        processRacePayouts(room);
+    if (!room.payoutSummary) {
+        return;
     }
+
+    const replayAlreadyExists =
+        room.completedRaceReplays.some(
+            (replay) =>
+                replay.raceNumber ===
+                room.raceNumber
+        );
+
+    if (replayAlreadyExists) {
+        return;
+    }
+
+    const replay:
+        CompletedRaceReplay = {
+        raceNumber:
+            room.raceNumber,
+
+        initialRacers:
+            createInitialRacers().map(
+                cloneRacerState
+            ),
+
+        events:
+            room.raceEvents.map(
+                cloneRaceEvent
+            ),
+
+        podium:
+            room.podium.map(
+                (entry) => ({
+                    ...entry
+                })
+            ),
+
+        sideBet: {
+            ...room.currentSideBet
+        },
+
+        payoutSummary: {
+            ...room.payoutSummary,
+
+            playerPayouts:
+                room.payoutSummary
+                    .playerPayouts
+                    .map(
+                        (
+                            playerPayout
+                        ) => ({
+                            ...playerPayout,
+
+                            tickets:
+                                playerPayout
+                                    .tickets
+                                    .map(
+                                        (
+                                            ticket
+                                        ) => ({
+                                            ...ticket
+                                        })
+                                    )
+                        })
+                    )
+        },
+
+        /*
+         * Preserve the exact betting context
+         * for this completed race.
+         */
+        players:
+            room.players.map(
+                (player) => ({
+                    id:
+                        player.id,
+
+                    name:
+                        player.name,
+
+                    draftedTickets:
+                        player.draftedTickets.map(
+                            (ticket) => ({
+                                ...ticket
+                            })
+                        ),
+
+                    doubledTicketId:
+                        player.doubledTicketId
+                })
+            )
+    };
+
+    room.completedRaceReplays.push(
+        replay
+    );
+}
+
+function cloneRacerState(
+    racer: RacerState
+): RacerState {
+    return {
+        ...racer
+    };
+}
+
+function cloneRaceEvent(
+    event: RaceEvent
+): RaceEvent {
+    if (event.type === "RACE_STATE") {
+        return {
+            ...event,
+            racers: event.racers.map(
+                (racer) => ({
+                    ...racer
+                })
+            )
+        };
+    }
+
+    if (event.type === "RACE_ENDED") {
+        return {
+            ...event,
+            podium: event.podium.map(
+                (entry) => ({
+                    ...entry
+                })
+            )
+        };
+    }
+
+    if (event.type === "TRACK_FOLDED") {
+        return {
+            ...event,
+            disqualifiedRacers: [
+                ...event.disqualifiedRacers
+            ]
+        };
+    }
+
+    return {
+        ...event
+    };
 }

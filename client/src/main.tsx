@@ -1,18 +1,29 @@
 import React, {
     useEffect,
     useMemo,
+    useRef,
     useState
 } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import {
+    CARD_CATALOG_BY_ID,
     getLifeOutcome,
     type BetRiskSide,
+    type CompletedRaceReplay,
     type DraftedBetTicket,
     type RaceCard,
+    type RaceEvent,
+    type RacerState,
     type TicketStackKey
 } from "@crazy-racing/shared";
 
+import { useRaceAnimation } from "./animation/useRaceAnimation";
+import { SoundProvider } from "./audio/SoundProvider";
+import {
+    useGameMusic,
+    useSound
+} from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
 import { BettingPhase } from "./components/betting/BettingPhase";
@@ -20,8 +31,19 @@ import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
 import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
 import { DraftedTicketIcon } from "./components/betting/DraftedTicketIcon";
 import { PayoutSummary } from "./components/betting/PayoutSummary";
+import { AnimatedCurrentCard } from "./components/cards/AnimatedCurrentCard";
 import { PrivateHand } from "./components/cards/PrivateHand";
 import { PublicRaceDeck } from "./components/cards/PublicRaceDeck";
+import { RaceCountdown } from "./components/race/RaceCountdown";
+import { RaceReplay } from "./components/replay/RaceReplay";
+import { ReplayImportButton } from "./components/replay/ReplayImportButton";
+import { ConfettiBlast } from "./components/results/ConfettiBlast";
+import {
+    FinalResultEntry,
+    FinalResultsReveal
+} from "./components/results/FinalResultsReveal";
+import { AudioMenuButton } from "./components/settings/AudioMenuButton";
+import { SoundControls } from "./components/settings/SoundControls";
 
 import "./styles.css";
 
@@ -41,6 +63,7 @@ type SocketResponse = {
 };
 
 type CurrentCardDisplay = {
+    definitionId?: string;
     owner: string;
     name: string;
     fullName: string;
@@ -64,25 +87,100 @@ function App() {
             selectedSecretCards: []
         });
 
-    const [playerName, setPlayerName] = useState("");
-    const [roomCodeInput, setRoomCodeInput] = useState("");
-    const [error, setError] = useState("");
-    const [selectedCards, setSelectedCards] = useState<string[]>([]);
+    const [playerName, setPlayerName] =
+        useState("");
+
+    const [roomCodeInput, setRoomCodeInput] =
+        useState("");
+
+    const [error, setError] =
+        useState("");
+
+    const [selectedCards, setSelectedCards] =
+        useState<string[]>([]);
 
     const [
         selectedDoubledTicketId,
         setSelectedDoubledTicketId
     ] = useState<string | null>(null);
 
+    const [
+        activeReplay,
+        setActiveReplay
+    ] = useState<CompletedRaceReplay | null>(
+        null
+    );
+
+    const [
+        importedReplay,
+        setImportedReplay
+    ] = useState<CompletedRaceReplay | null>(
+        null
+    );
+
+    const [
+        isCountdownActive,
+        setIsCountdownActive
+    ] = useState(false);
+
+    const {
+        playEffect
+    } = useSound();
+
+    const musicMode =
+        room?.phase === "racing" ||
+            room?.phase ===
+            "reshuffle-required" ||
+            room?.phase ===
+            "race-complete" ||
+            Boolean(activeReplay)
+            ? "race"
+            : "ambience";
+
+    useGameMusic(
+        musicMode
+    );
+
+    const previousPhaseRef =
+        useRef<string | null>(
+            null
+        );
+
     useEffect(() => {
-        function handleRoomUpdate(updatedRoom: any) {
+        if (
+            room?.phase === "final" &&
+            previousPhaseRef.current !==
+            "final"
+        ) {
+            playEffect(
+                "victory",
+                {
+                    volume: 0.9
+                }
+            );
+        }
+
+        previousPhaseRef.current =
+            room?.phase ?? null;
+    }, [
+        playEffect,
+        room?.phase
+    ]);
+
+    useEffect(() => {
+        function handleRoomUpdate(
+            updatedRoom: any
+        ) {
             setRoom(updatedRoom);
         }
 
         function handlePrivateState(
-            updatedPrivateState: PrivatePlayerState
+            updatedPrivateState:
+                PrivatePlayerState
         ) {
-            setPrivateState(updatedPrivateState);
+            setPrivateState(
+                updatedPrivateState
+            );
         }
 
         function handleRoomKicked(
@@ -96,6 +194,7 @@ function App() {
             });
 
             setSelectedCards([]);
+            setActiveReplay(null);
 
             setError(
                 payload.reason ??
@@ -109,48 +208,131 @@ function App() {
             );
         }
 
-        socket.on("room:update", handleRoomUpdate);
-        socket.on("player:private", handlePrivateState);
-        socket.on("room:kicked", handleRoomKicked);
+        socket.on(
+            "room:update",
+            handleRoomUpdate
+        );
 
-        const url = new URL(window.location.href);
-        const joinCode = url.searchParams.get("room");
+        socket.on(
+            "player:private",
+            handlePrivateState
+        );
+
+        socket.on(
+            "room:kicked",
+            handleRoomKicked
+        );
+
+        const url =
+            new URL(
+                window.location.href
+            );
+
+        const joinCode =
+            url.searchParams.get(
+                "room"
+            );
 
         if (joinCode) {
-            setRoomCodeInput(joinCode.toUpperCase());
+            setRoomCodeInput(
+                joinCode.toUpperCase()
+            );
         }
 
         return () => {
-            socket.off("room:update", handleRoomUpdate);
-            socket.off("player:private", handlePrivateState);
-            socket.off("room:kicked", handleRoomKicked);
+            socket.off(
+                "room:update",
+                handleRoomUpdate
+            );
+
+            socket.off(
+                "player:private",
+                handlePrivateState
+            );
+
+            socket.off(
+                "room:kicked",
+                handleRoomKicked
+            );
         };
     }, []);
 
+    useEffect(() => {
+        if (
+            activeReplay &&
+            room?.phase !== "payouts" &&
+            room?.phase !== "final"
+        ) {
+            setActiveReplay(null);
+        }
+    }, [
+        activeReplay,
+        room?.phase
+    ]);
+
     const me = useMemo(() => {
         return room?.players.find(
-            (player: any) => player.id === socket.id
+            (player: any) =>
+                player.id === socket.id
         );
     }, [room]);
 
-    const currentDraftPlayer = useMemo(() => {
-        const currentPlayerId =
-            room?.bettingDraft?.currentPlayerId;
+    const currentDraftPlayer =
+        useMemo(() => {
+            const currentPlayerId =
+                room?.bettingDraft
+                    ?.currentPlayerId;
 
-        if (!currentPlayerId) {
-            return null;
-        }
+            if (!currentPlayerId) {
+                return null;
+            }
 
-        return (
-            room.players.find(
-                (player: any) =>
-                    player.id === currentPlayerId
-            ) ?? null
-        );
-    }, [room]);
+            return (
+                room.players.find(
+                    (player: any) =>
+                        player.id ===
+                        currentPlayerId
+                ) ?? null
+            );
+        }, [room]);
+
+    const currentRaceReplay =
+        useMemo(() => {
+            const replays:
+                CompletedRaceReplay[] =
+                room?.completedRaceReplays ??
+                [];
+
+            return (
+                replays.find(
+                    (replay) =>
+                        replay.raceNumber ===
+                        room?.raceNumber
+                ) ?? null
+            );
+        }, [
+            room?.completedRaceReplays,
+            room?.raceNumber
+        ]);
 
     const isHost =
-        room?.hostSocketId === socket.id;
+        room?.hostSocketId ===
+        socket.id;
+
+    const {
+        visualRacers,
+        activeEvent,
+        activeCardOwner,
+        isAnimating
+    } = useRaceAnimation({
+        racers: (room?.racers ?? []) as RacerState[],
+        raceEvents: (room?.raceEvents ?? []) as RaceEvent[],
+        raceNumber: room?.raceNumber ?? 0,
+        enabled:
+            room?.phase === "racing" ||
+            room?.phase === "reshuffle-required" ||
+            room?.phase === "race-complete"
+    });
 
     function handleSocketResponse(
         response: SocketResponse
@@ -172,14 +354,24 @@ function App() {
         socket.emit(
             "room:create",
             {
-                playerName: playerName.trim()
+                playerName:
+                    playerName.trim()
             },
-            (response: SocketResponse) => {
-                if (!handleSocketResponse(response)) {
+            (
+                response:
+                    SocketResponse
+            ) => {
+                if (
+                    !handleSocketResponse(
+                        response
+                    )
+                ) {
                     return;
                 }
 
-                if (response.roomCode) {
+                if (
+                    response.roomCode
+                ) {
                     window.history.pushState(
                         null,
                         "",
@@ -195,15 +387,28 @@ function App() {
             "room:join",
             {
                 roomCode:
-                    roomCodeInput.trim().toUpperCase(),
-                playerName: playerName.trim()
+                    roomCodeInput
+                        .trim()
+                        .toUpperCase(),
+
+                playerName:
+                    playerName.trim()
             },
-            (response: SocketResponse) => {
-                if (!handleSocketResponse(response)) {
+            (
+                response:
+                    SocketResponse
+            ) => {
+                if (
+                    !handleSocketResponse(
+                        response
+                    )
+                ) {
                     return;
                 }
 
-                if (response.roomCode) {
+                if (
+                    response.roomCode
+                ) {
                     window.history.pushState(
                         null,
                         "",
@@ -215,13 +420,41 @@ function App() {
     }
 
     function toggleReady() {
-        if (!room) {
+        if (
+            !room ||
+            !me
+        ) {
             return;
         }
 
-        socket.emit("player:ready", {
-            roomCode: room.roomCode
-        });
+        /*
+         * me.ready describes the state before the click.
+         *
+         * false -> Ready:
+         * use the normal positive confirmation sound.
+         *
+         * true -> Unready:
+         * use the deeper negative confirmation sound.
+         */
+        playEffect(
+            me.ready
+                ? "ui-unready"
+                : "ui-confirm",
+            {
+                volume:
+                    me.ready
+                        ? 0.78
+                        : 0.7
+            }
+        );
+
+        socket.emit(
+            "player:ready",
+            {
+                roomCode:
+                    room.roomCode
+            }
+        );
     }
 
     function startGame() {
@@ -232,10 +465,16 @@ function App() {
         socket.emit(
             "game:start",
             {
-                roomCode: room.roomCode
+                roomCode:
+                    room.roomCode
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -251,12 +490,18 @@ function App() {
         socket.emit(
             "betting:confirm",
             {
-                roomCode: room.roomCode,
+                roomCode:
+                    room.roomCode,
                 stack,
                 risk
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -271,30 +516,105 @@ function App() {
         socket.emit(
             "betting:double",
             {
-                roomCode: room.roomCode,
+                roomCode:
+                    room.roomCode,
                 ticketId
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
+            }
+        );
+
+        playEffect(
+            "ui-confirm",
+            {
+                volume: 0.7
             }
         );
     }
 
-    function toggleCard(cardId: string) {
-        if (me?.secretCardsSubmitted) {
+    function toggleCard(
+        cardId: string
+    ) {
+        playEffect(
+            "ui-select",
+            {
+                volume: 0.55
+            }
+        );
+
+        if (
+            me?.secretCardsSubmitted
+        ) {
             return;
         }
 
-        setSelectedCards((current) => {
-            if (current.includes(cardId)) {
-                return current.filter(
-                    (selectedId) =>
-                        selectedId !== cardId
-                );
-            }
+        const maximumSelectedCards =
+            room?.players.length === 2
+                ? 2
+                : 1;
 
-            return [...current, cardId];
-        });
+        setSelectedCards(
+            (current) => {
+                /*
+                 * Clicking an already selected card
+                 * always deselects it.
+                 */
+                if (
+                    current.includes(
+                        cardId
+                    )
+                ) {
+                    return current.filter(
+                        (selectedId) =>
+                            selectedId !==
+                            cardId
+                    );
+                }
+
+                /*
+                 * Two-player games allow up to two
+                 * selected private cards.
+                 */
+                if (
+                    maximumSelectedCards === 2
+                ) {
+                    if (
+                        current.length >= 2
+                    ) {
+                        /*
+                         * Replace the oldest selected
+                         * card with the newly clicked one.
+                         */
+                        return [
+                            current[
+                            current.length - 1
+                            ],
+                            cardId
+                        ];
+                    }
+
+                    return [
+                        ...current,
+                        cardId
+                    ];
+                }
+
+                /*
+                 * Games with 3–9 players allow exactly
+                 * one selected card at a time. Clicking
+                 * another card replaces the selection.
+                 */
+                return [
+                    cardId
+                ];
+            }
+        );
     }
 
     function submitSecretCards() {
@@ -305,13 +625,30 @@ function App() {
         socket.emit(
             "secret:submit",
             {
-                roomCode: room.roomCode,
-                cardIds: selectedCards
+                roomCode:
+                    room.roomCode,
+
+                cardIds:
+                    selectedCards
             },
-            (response: SocketResponse) => {
-                if (!handleSocketResponse(response)) {
+            (
+                response:
+                    SocketResponse
+            ) => {
+                if (
+                    !handleSocketResponse(
+                        response
+                    )
+                ) {
                     return;
                 }
+
+                playEffect(
+                    "ui-confirm",
+                    {
+                        volume: 0.7
+                    }
+                );
 
                 setSelectedCards([]);
             }
@@ -326,10 +663,16 @@ function App() {
         socket.emit(
             "race:start",
             {
-                roomCode: room.roomCode
+                roomCode:
+                    room.roomCode
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -342,10 +685,16 @@ function App() {
         socket.emit(
             "race:step",
             {
-                roomCode: room.roomCode
+                roomCode:
+                    room.roomCode
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -358,10 +707,38 @@ function App() {
         socket.emit(
             "race:reshuffle",
             {
-                roomCode: room.roomCode
+                roomCode:
+                    room.roomCode
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
+            }
+        );
+    }
+
+    function checkRaceResults() {
+        if (!room) {
+            return;
+        }
+
+        socket.emit(
+            "race:check-results",
+            {
+                roomCode:
+                    room.roomCode
+            },
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -371,9 +748,13 @@ function App() {
             return;
         }
 
-        socket.emit("payouts:continue", {
-            roomCode: room.roomCode
-        });
+        socket.emit(
+            "payouts:continue",
+            {
+                roomCode:
+                    room.roomCode
+            }
+        );
     }
 
     function selectRaceAgain() {
@@ -384,10 +765,16 @@ function App() {
         socket.emit(
             "final:race-again",
             {
-                roomCode: room.roomCode
+                roomCode:
+                    room.roomCode
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -400,10 +787,16 @@ function App() {
         socket.emit(
             "final:restart",
             {
-                roomCode: room.roomCode
+                roomCode:
+                    room.roomCode
             },
-            (response: SocketResponse) => {
-                handleSocketResponse(response);
+            (
+                response:
+                    SocketResponse
+            ) => {
+                handleSocketResponse(
+                    response
+                );
             }
         );
     }
@@ -414,7 +807,8 @@ function App() {
         }
 
         const roomLink =
-            `${window.location.origin}/?room=${room.roomCode}`;
+            `${window.location.origin}` +
+            `/?room=${room.roomCode}`;
 
         navigator.clipboard
             .writeText(roomLink)
@@ -425,15 +819,43 @@ function App() {
             });
     }
 
+    if (
+        !room &&
+        importedReplay
+    ) {
+        return (
+            <main className="page">
+                <section className="card importedReplayPage">
+                    <RaceReplay
+                        replay={
+                            importedReplay
+                        }
+                        onExit={() =>
+                            setImportedReplay(
+                                null
+                            )
+                        }
+                    />
+                </section>
+            </main>
+        );
+    }
+
     if (!room) {
         return (
             <main className="page center">
                 <div className="card menu">
-                    <h1>CRAZY RACING</h1>
+                    <AudioMenuButton
+                        placement="initial"
+                    />
+
+                    <h1>
+                        CRAZY RACING
+                    </h1>
 
                     <p>
-                        Create a racing room or join an
-                        existing one.
+                        Create a racing room
+                        or join an existing one.
                     </p>
 
                     <input
@@ -450,7 +872,9 @@ function App() {
                     <button
                         type="button"
                         onClick={createRoom}
-                        disabled={!playerName.trim()}
+                        disabled={
+                            !playerName.trim()
+                        }
                     >
                         Create Room
                     </button>
@@ -469,11 +893,23 @@ function App() {
                     <input
                         type="text"
                         placeholder="Room code"
-                        value={roomCodeInput}
+                        value={
+                            roomCodeInput
+                        }
                         onChange={(event) =>
                             setRoomCodeInput(
-                                event.target.value.toUpperCase()
+                                event.target.value
+                                    .toUpperCase()
                             )
+                        }
+                    />
+
+                    <ReplayImportButton
+                        onReplayImported={
+                            setImportedReplay
+                        }
+                        onError={
+                            setError
                         }
                     />
 
@@ -490,9 +926,15 @@ function App() {
     return (
         <main className="page">
             <header className="topbar">
-                <h1>CRAZY RACING</h1>
+                <h1>
+                    CRAZY RACING
+                </h1>
 
                 <div className="roomInformation">
+                    <AudioMenuButton
+                        placement="header"
+                    />
+
                     <span>
                         Room:{" "}
                         <strong>
@@ -502,7 +944,9 @@ function App() {
 
                     <button
                         type="button"
-                        onClick={copyRoomLink}
+                        onClick={
+                            copyRoomLink
+                        }
                     >
                         Copy Link
                     </button>
@@ -517,35 +961,53 @@ function App() {
 
             <section className="layout">
                 <aside className="card playersPanel">
-                    <h2>Players</h2>
+                    <h2>
+                        Players
+                    </h2>
 
                     <div className="playersList">
                         {room.players.map(
-                            (player: any) => (
+                            (
+                                player: any
+                            ) => (
                                 <div
                                     className={[
                                         "player",
-                                        room.bettingDraft
+
+                                        player.id ===
+                                            socket.id
+                                            ? "playerSelf"
+                                            : "",
+
+                                        room
+                                            .bettingDraft
                                             ?.currentPlayerId ===
                                             player.id
                                             ? "playerCurrentDrafter"
                                             : ""
                                     ]
-                                        .filter(Boolean)
-                                        .join(" ")}
-                                    key={player.id}
+                                        .filter(
+                                            Boolean
+                                        )
+                                        .join(
+                                            " "
+                                        )}
+                                    key={
+                                        player.id
+                                    }
                                 >
                                     <div className="playerMainInformation">
                                         <span className="playerName">
-                                            {player.name}
-                                            {player.id ===
-                                                socket.id
-                                                ? " (you)"
-                                                : ""}
+                                            {
+                                                player.name
+                                            }
                                         </span>
 
                                         <span className="playerMoney">
-                                            ${player.money}
+                                            $
+                                            {
+                                                player.money
+                                            }
                                         </span>
                                     </div>
 
@@ -566,13 +1028,15 @@ function App() {
 
                                     {player.secretCardsSubmitted && (
                                         <span className="secretSubmissionStatus">
-                                            Secret card submitted
+                                            Secret card
+                                            submitted
                                         </span>
                                     )}
 
                                     {player.raceAgain && (
                                         <span className="raceAgainStatus">
-                                            Race again selected
+                                            Race again
+                                            selected
                                         </span>
                                     )}
 
@@ -583,8 +1047,12 @@ function App() {
                                                     DraftedBetTicket
                                             ) => (
                                                 <DraftedTicketIcon
-                                                    key={ticket.id}
-                                                    ticket={ticket}
+                                                    key={
+                                                        ticket.id
+                                                    }
+                                                    ticket={
+                                                        ticket
+                                                    }
                                                 />
                                             )
                                         )}
@@ -594,168 +1062,224 @@ function App() {
                         )}
                     </div>
 
-                    {room.phase === "lobby" && (
-                        <div className="lobbyControls">
-                            <button
-                                type="button"
-                                onClick={toggleReady}
-                            >
-                                {me?.ready
-                                    ? "Unready"
-                                    : "Ready"}
-                            </button>
-
-                            {isHost && (
+                    {room.phase ===
+                        "lobby" && (
+                            <div className="lobbyControls">
                                 <button
                                     type="button"
-                                    onClick={startGame}
+                                    onClick={
+                                        toggleReady
+                                    }
                                 >
-                                    Start Game
+                                    {me?.ready
+                                        ? "Unready"
+                                        : "Ready"}
                                 </button>
-                            )}
-                        </div>
-                    )}
+
+                                {isHost && (
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            startGame
+                                        }
+                                    >
+                                        Start Game
+                                    </button>
+                                )}
+                            </div>
+                        )}
                 </aside>
 
                 <section className="card mainpanel">
                     <h2>
-                        Race {room.raceNumber} -{" "}
+                        Race{" "}
+                        {room.raceNumber}
+                        {" - "}
                         {formatPhaseName(
                             room.phase
                         )}
                     </h2>
 
-                    {room.phase === "betting" && (
-                        <BettingPhase
-                            socketPlayerId={socket.id}
-                            currentPlayerName={
-                                currentDraftPlayer
-                                    ?.name ?? null
-                            }
-                            draft={
-                                room.bettingDraft
-                            }
-                            availableTickets={
-                                room.availableTickets
-                            }
-                            currentSideBet={
-                                room.currentSideBet
-                            }
-                            publicDeckDefinitionIds={
-                                room.publicRaceDeckDefinitionIds
-                            }
-                            privateHand={
-                                privateState.hand
-                            }
-                            onConfirmDraft={
-                                confirmBettingDraft
-                            }
-                        />
-                    )}
-
-                    {room.phase === "double-bet" && (
-                        <section className="doubleBetPhase">
-                            <h3>
-                                Choose one betting ticket to double
-                            </h3>
-
-                            <p>
-                                The selected ticket's positive or negative
-                                payout will be multiplied by two.
-                            </p>
-
-                            {me?.doubledTicketId ? (
-                                <p className="phaseConfirmation">
-                                    Your doubled betting ticket is confirmed.
-                                </p>
-                            ) : (
-                                <>
-                                    <div className="doubleBetFullChoices">
-                                        {me?.draftedTickets.map(
-                                            (ticket: DraftedBetTicket) => (
-                                                <DraftedTicketChoice
-                                                    key={ticket.id}
-                                                    ticket={ticket}
-                                                    currentSideBet={
-                                                        room.currentSideBet
-                                                    }
-                                                    selected={
-                                                        selectedDoubledTicketId ===
-                                                        ticket.id
-                                                    }
-                                                    onSelect={() =>
-                                                        setSelectedDoubledTicketId(
-                                                            ticket.id
-                                                        )
-                                                    }
-                                                />
-                                            )
-                                        )}
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        disabled={
-                                            selectedDoubledTicketId === null
-                                        }
-                                        onClick={() => {
-                                            if (
-                                                selectedDoubledTicketId === null
-                                            ) {
-                                                return;
-                                            }
-
-                                            confirmDoubledTicket(
-                                                selectedDoubledTicketId
-                                            );
-
-                                            setSelectedDoubledTicketId(null);
-                                        }}
-                                    >
-                                        Confirm x2 betting ticket
-                                    </button>
-                                </>
-                            )}
-                        </section>
-                    )}
-
-                    {room.phase === "secret-card" && (
-                        <section className="secretCardPhase">
-                            <PublicRaceDeck
-                                definitionIds={
+                    {room.phase ===
+                        "betting" && (
+                            <BettingPhase
+                                socketPlayerId={
+                                    socket.id
+                                }
+                                currentPlayerName={
+                                    currentDraftPlayer
+                                        ?.name ??
+                                    null
+                                }
+                                draft={
+                                    room.bettingDraft
+                                }
+                                availableTickets={
+                                    room.availableTickets
+                                }
+                                currentSideBet={
+                                    room.currentSideBet
+                                }
+                                publicDeckDefinitionIds={
                                     room.publicRaceDeckDefinitionIds
                                 }
-                            />
-
-                            <PrivateHand
-                                cards={privateState.hand}
-                                selectedCardIds={selectedCards}
-                                selectable={
-                                    !me?.secretCardsSubmitted
+                                privateHand={
+                                    privateState.hand
                                 }
-                                disabled={Boolean(
-                                    me?.secretCardsSubmitted
-                                )}
-                                onToggleCard={toggleCard}
+                                onConfirmDraft={
+                                    confirmBettingDraft
+                                }
                             />
+                        )}
 
-                            {!me?.secretCardsSubmitted && (
-                                <button
-                                    type="button"
-                                    onClick={submitSecretCards}
-                                >
-                                    Confirm secret card(s)
-                                </button>
-                            )}
+                    {room.phase ===
+                        "double-bet" && (
+                            <section className="doubleBetPhase">
+                                <h3>
+                                    Choose one betting
+                                    ticket to double
+                                </h3>
 
-                            {me?.secretCardsSubmitted && (
-                                <p className="phaseConfirmation">
-                                    Your secret-card selection has been submitted.
-                                    Waiting for the other players.
+                                <p>
+                                    The selected
+                                    ticket's positive or
+                                    negative payout will
+                                    be multiplied by two.
                                 </p>
-                            )}
-                        </section>
-                    )}
+
+                                {me?.doubledTicketId ? (
+                                    <p className="phaseConfirmation">
+                                        Your doubled
+                                        betting ticket is
+                                        confirmed.
+                                    </p>
+                                ) : (
+                                    <>
+                                        <div className="doubleBetFullChoices">
+                                            {me?.draftedTickets.map(
+                                                (
+                                                    ticket:
+                                                        DraftedBetTicket
+                                                ) => (
+                                                    <DraftedTicketChoice
+                                                        key={
+                                                            ticket.id
+                                                        }
+                                                        ticket={
+                                                            ticket
+                                                        }
+                                                        currentSideBet={
+                                                            room.currentSideBet
+                                                        }
+                                                        selected={
+                                                            selectedDoubledTicketId ===
+                                                            ticket.id
+                                                        }
+                                                        onSelect={() => {
+                                                            playEffect(
+                                                                "bet-draft",
+                                                                {
+                                                                    volume: 0.55
+                                                                }
+                                                            );
+
+                                                            setSelectedDoubledTicketId(
+                                                                ticket.id
+                                                            );
+                                                        }}
+                                                    />
+                                                )
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            disabled={
+                                                selectedDoubledTicketId ===
+                                                null
+                                            }
+                                            onClick={() => {
+                                                if (
+                                                    selectedDoubledTicketId ===
+                                                    null
+                                                ) {
+                                                    return;
+                                                }
+
+                                                confirmDoubledTicket(
+                                                    selectedDoubledTicketId
+                                                );
+
+                                                setSelectedDoubledTicketId(
+                                                    null
+                                                );
+                                            }}
+                                        >
+                                            Confirm x2
+                                            betting ticket
+                                        </button>
+                                    </>
+                                )}
+                            </section>
+                        )}
+
+                    {room.phase ===
+                        "secret-card" && (
+                            <section className="secretCardPhase">
+                                <PublicRaceDeck
+                                    definitionIds={
+                                        room.publicRaceDeckDefinitionIds
+                                    }
+                                />
+
+                                <PrivateHand
+                                    cards={
+                                        privateState.hand
+                                    }
+                                    selectedCardIds={
+                                        selectedCards
+                                    }
+                                    selectable={
+                                        !me?.secretCardsSubmitted
+                                    }
+                                    disabled={Boolean(
+                                        me?.secretCardsSubmitted
+                                    )}
+                                    onToggleCard={
+                                        toggleCard
+                                    }
+                                />
+
+                                {!me?.secretCardsSubmitted && (
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            submitSecretCards
+                                        }
+                                        disabled={
+                                            selectedCards.length !==
+                                            (
+                                                room.players.length === 2
+                                                    ? 2
+                                                    : 1
+                                            )
+                                        }
+                                    >
+                                        Confirm secret card(s)
+                                    </button>
+                                )}
+
+                                {me?.secretCardsSubmitted && (
+                                    <p className="phaseConfirmation">
+                                        Your secret-card
+                                        selection has been
+                                        submitted. Waiting
+                                        for the other
+                                        players.
+                                    </p>
+                                )}
+                            </section>
+                        )}
 
                     {room.phase ===
                         "ready-to-race" && (
@@ -769,38 +1293,62 @@ function App() {
                                     <button
                                         type="button"
                                         className="startRaceButton"
-                                        onClick={startRace}
+                                        onClick={
+                                            startRace
+                                        }
                                     >
                                         START RACE!!!
                                     </button>
                                 ) : (
                                     <p>
-                                        Waiting for the room host
-                                        to start the race.
+                                        Waiting for the
+                                        room host to start
+                                        the race.
                                     </p>
                                 )}
                             </section>
                         )}
 
                     {(
-                        room.phase === "racing" ||
                         room.phase ===
-                        "reshuffle-required"
+                        "racing" ||
+                        room.phase ===
+                        "reshuffle-required" ||
+                        room.phase ===
+                        "race-complete"
                     ) && (
                             <section className="racePhase">
-                                <Board
-                                    racers={room.racers}
-                                    shortenedBy={
-                                        room.shortenedBy ?? 0
-                                    }
-                                    remainingCards={room.deckRemaining ?? 0}
-                                />
+                                <div className="raceBoardStage">
+                                    <Board
+                                        racers={
+                                            visualRacers
+                                        }
+                                        shortenedBy={
+                                            room.shortenedBy ?? 0
+                                        }
+                                        remainingCards={
+                                            room.deckRemaining ?? 0
+                                        }
+                                        activeEvent={
+                                            activeEvent
+                                        }
+                                        activeCardOwner={
+                                            activeCardOwner
+                                        }
+                                        isAnimating={
+                                            isAnimating
+                                        }
+                                    />
 
-                                <CurrentCard
-                                    card={
-                                        room.currentCardDisplay
-                                    }
-                                />
+                                    <RaceCountdown
+                                        raceEvents={
+                                            room.raceEvents ?? []
+                                        }
+                                        onActiveChange={
+                                            setIsCountdownActive
+                                        }
+                                    />
+                                </div>
 
                                 {isHost && (
                                     <div className="raceControls">
@@ -808,9 +1356,16 @@ function App() {
                                             "racing" && (
                                                 <button
                                                     type="button"
-                                                    onClick={stepRace}
+                                                    onClick={
+                                                        stepRace
+                                                    }
+                                                    disabled={
+                                                        isAnimating ||
+                                                        isCountdownActive
+                                                    }
                                                 >
-                                                    Flip next card
+                                                    Flip next
+                                                    card
                                                 </button>
                                             )}
 
@@ -822,9 +1377,33 @@ function App() {
                                                     onClick={
                                                         reshuffleRaceDeck
                                                     }
+                                                    disabled={
+                                                        isAnimating ||
+                                                        isCountdownActive
+                                                    }
                                                 >
-                                                    Reshuffle race card
+                                                    Reshuffle
+                                                    race card
                                                     deck
+                                                </button>
+                                            )}
+
+                                        {room.phase ===
+                                            "race-complete" && (
+                                                <button
+                                                    type="button"
+                                                    className="checkRaceResultsButton"
+                                                    onClick={
+                                                        checkRaceResults
+                                                    }
+                                                    disabled={
+                                                        isAnimating ||
+                                                        isCountdownActive
+                                                    }
+                                                >
+                                                    {isAnimating
+                                                        ? "Finishing animations..."
+                                                        : "Check race results!"}
                                                 </button>
                                             )}
                                     </div>
@@ -832,162 +1411,382 @@ function App() {
 
                                 {!isHost && (
                                     <p className="hostControlMessage">
-                                        The room host controls the
-                                        racing deck.
+                                        {room.phase ===
+                                            "race-complete"
+                                            ? "Waiting for the room host to check the race results."
+                                            : "The room host controls the racing deck."}
                                     </p>
+                                )}
+
+                                <AnimatedCurrentCard
+                                    card={
+                                        room.currentCardDisplay
+                                    }
+                                    definition={
+                                        room.currentCard
+                                            ?.definitionId
+                                            ? (
+                                                CARD_CATALOG_BY_ID[
+                                                room.currentCard
+                                                    .definitionId
+                                                ] ?? null
+                                            )
+                                            : null
+                                    }
+                                    animationKey={
+                                        room.currentCard?.id ??
+                                        room.currentCardDisplay
+                                            ?.fullName ??
+                                        null
+                                    }
+                                />
+                            </section>
+                        )}
+
+                    {room.phase ===
+                        "payouts" && (
+                            <section className="payoutPhase">
+                                {activeReplay ? (
+                                    <RaceReplay
+                                        replay={
+                                            activeReplay
+                                        }
+                                        onExit={() =>
+                                            setActiveReplay(
+                                                null
+                                            )
+                                        }
+                                    />
+                                ) : (
+                                    <>
+                                        {room.payoutSummary ? (
+                                            <PayoutSummary
+                                                summary={
+                                                    room.payoutSummary
+                                                }
+                                                currentPlayerId={
+                                                    socket.id
+                                                }
+                                            />
+                                        ) : (
+                                            <p>
+                                                Calculating
+                                                race
+                                                payouts...
+                                            </p>
+                                        )}
+
+                                        {currentRaceReplay && (
+                                            <button
+                                                type="button"
+                                                className="replayRaceButton"
+                                                onClick={() =>
+                                                    setActiveReplay(
+                                                        currentRaceReplay
+                                                    )
+                                                }
+                                            >
+                                                Replay race
+                                            </button>
+                                        )}
+
+                                        {isHost &&
+                                            room.payoutSummary && (
+                                                <button
+                                                    type="button"
+                                                    onClick={
+                                                        continueAfterPayouts
+                                                    }
+                                                >
+                                                    {room.raceNumber >=
+                                                        3
+                                                        ? "Show final ranking"
+                                                        : "Continue to next race"}
+                                                </button>
+                                            )}
+
+                                        {!isHost && (
+                                            <p className="hostControlMessage">
+                                                Waiting for
+                                                the room host
+                                                to continue.
+                                            </p>
+                                        )}
+                                    </>
                                 )}
                             </section>
                         )}
 
-                    {room.phase === "payouts" && (
-                        <section className="payoutPhase">
-                            {room.payoutSummary ? (
-                                <PayoutSummary
-                                    summary={room.payoutSummary}
-                                    currentPlayerId={socket.id}
-                                />
-                            ) : (
-                                <p>
-                                    Calculating race payouts...
-                                </p>
-                            )}
+                    {room.phase === "final" && (() => {
+                        const finalPlayers =
+                            [...room.players].sort(
+                                (
+                                    first: any,
+                                    second: any
+                                ) =>
+                                    second.money -
+                                    first.money
+                            );
 
-                            {isHost && room.payoutSummary && (
-                                <button
-                                    type="button"
-                                    onClick={continueAfterPayouts}
-                                >
-                                    {room.raceNumber >= 3
-                                        ? "Show final ranking"
-                                        : "Continue to next race"}
-                                </button>
-                            )}
+                        return (
+                            <section className="finalPhase">
+                                {!activeReplay && (
+                                    <ConfettiBlast
+                                        pieceCount={500}
+                                        durationMs={8000}
+                                    />
+                                )}
 
-                            {!isHost && (
-                                <p className="hostControlMessage">
-                                    Waiting for the room host to continue.
-                                </p>
-                            )}
-                        </section>
-                    )}
+                                {activeReplay ? (
+                                    <RaceReplay
+                                        replay={
+                                            activeReplay
+                                        }
+                                        onExit={() =>
+                                            setActiveReplay(
+                                                null
+                                            )
+                                        }
+                                    />
+                                ) : (
+                                    <FinalResultsReveal>
+                                        {finalPlayers.map(
+                                            (
+                                                player: any,
+                                                index: number
+                                            ) => {
+                                                const lifeOutcome =
+                                                    getLifeOutcome(
+                                                        player.money
+                                                    );
 
-                    {room.phase === "final" && (
-                        <section className="finalPhase">
-                            <h3>Final Results</h3>
+                                                return (
+                                                    <FinalResultEntry
+                                                        key={
+                                                            player.id
+                                                        }
+                                                        index={
+                                                            index
+                                                        }
+                                                        winner={
+                                                            index === 0
+                                                        }
+                                                    >
+                                                        <article
+                                                            className={[
+                                                                "finalResultCard",
 
-                            {[...room.players]
-                                .sort(
-                                    (
-                                        first: any,
-                                        second: any
-                                    ) =>
-                                        second.money -
-                                        first.money
-                                )
-                                .map(
-                                    (
-                                        player: any,
-                                        index: number
-                                    ) => {
-                                        const lifeOutcome =
-                                            getLifeOutcome(
-                                                player.money
-                                            );
+                                                                index === 0
+                                                                    ? "finalResultCardWinner"
+                                                                    : ""
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(" ")}
+                                                        >
+                                                            <div className="finalResultRanking">
+                                                                <span>
+                                                                    #
+                                                                    {index +
+                                                                        1}
+                                                                </span>
 
-                                        return (
-                                            <article
-                                                className="finalResultCard"
-                                                key={player.id}
-                                            >
-                                                <div className="finalResultRanking">
+                                                                <div>
+                                                                    <strong>
+                                                                        {
+                                                                            player.name
+                                                                        }
+                                                                    </strong>
+
+                                                                    <span className="finalResultMoney">
+                                                                        $
+                                                                        {
+                                                                            player.money
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="lifeOutcome">
+                                                                <strong>
+                                                                    Life outcome{" "}
+                                                                    {
+                                                                        lifeOutcome.amountLabel
+                                                                    }
+                                                                </strong>
+
+                                                                <p>
+                                                                    {
+                                                                        lifeOutcome.text
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                        </article>
+                                                    </FinalResultEntry>
+                                                );
+                                            }
+                                        )}
+
+                                        <section className="finalReplayHistory">
+                                            <div className="finalReplayHistoryHeader">
+                                                <div>
                                                     <span>
-                                                        #{index + 1}
+                                                        Race
+                                                        history
                                                     </span>
 
-                                                    <div>
-                                                        <strong>
-                                                            {player.name}
-                                                        </strong>
-
-                                                        <span className="finalResultMoney">
-                                                            ${player.money}
-                                                        </span>
-                                                    </div>
+                                                    <h3>
+                                                        Replay
+                                                        completed
+                                                        races
+                                                    </h3>
                                                 </div>
 
-                                                <div className="lifeOutcome">
-                                                    <strong>
-                                                        Life outcome {lifeOutcome.amountLabel}
-                                                    </strong>
+                                                <p>
+                                                    Choose any
+                                                    race to
+                                                    replay it
+                                                    independently.
+                                                </p>
+                                            </div>
 
-                                                    <p>
-                                                        {lifeOutcome.text}
+                                            <div className="finalReplayButtons">
+                                                {(
+                                                    room.completedRaceReplays ??
+                                                    []
+                                                )
+                                                    .slice()
+                                                    .sort(
+                                                        (
+                                                            first:
+                                                                CompletedRaceReplay,
+                                                            second:
+                                                                CompletedRaceReplay
+                                                        ) =>
+                                                            first.raceNumber -
+                                                            second.raceNumber
+                                                    )
+                                                    .map(
+                                                        (
+                                                            replay:
+                                                                CompletedRaceReplay
+                                                        ) => (
+                                                            <button
+                                                                type="button"
+                                                                key={
+                                                                    replay.raceNumber
+                                                                }
+                                                                className="finalReplayButton"
+                                                                onClick={() =>
+                                                                    setActiveReplay(
+                                                                        replay
+                                                                    )
+                                                                }
+                                                            >
+                                                                <span>
+                                                                    Race{" "}
+                                                                    {
+                                                                        replay.raceNumber
+                                                                    }
+                                                                </span>
+
+                                                                <strong>
+                                                                    Replay
+                                                                    race
+                                                                </strong>
+                                                            </button>
+                                                        )
+                                                    )}
+                                            </div>
+
+                                            {(
+                                                room.completedRaceReplays ??
+                                                []
+                                            ).length ===
+                                                0 && (
+                                                    <p className="finalReplayUnavailable">
+                                                        No race
+                                                        replays are
+                                                        available.
                                                     </p>
-                                                </div>
-                                            </article>
-                                        );
-                                    }
-                                )}
+                                                )}
+                                        </section>
 
-                            <div className="raceAgainControls">
-                                <button
-                                    type="button"
-                                    onClick={
-                                        selectRaceAgain
-                                    }
-                                    disabled={Boolean(
-                                        me?.raceAgain
-                                    )}
-                                >
-                                    {me?.raceAgain
-                                        ? "Race again selected"
-                                        : "Race again!"}
-                                </button>
-
-                                {isHost && (
-                                    <button
-                                        type="button"
-                                        className="restartGameButton"
-                                        onClick={
-                                            restartGame
-                                        }
-                                        disabled={
-                                            !room.canRestartGame
-                                        }
-                                    >
-                                        Restart game
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="raceAgainPlayers">
-                                <strong>
-                                    Players racing again:
-                                </strong>
-
-                                {room.players
-                                    .filter(
-                                        (player: any) =>
-                                            player.id ===
-                                            room.hostSocketId ||
-                                            player.raceAgain
-                                    )
-                                    .map(
-                                        (player: any) => (
-                                            <span
-                                                key={player.id}
+                                        <div className="raceAgainControls">
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    selectRaceAgain
+                                                }
+                                                disabled={Boolean(
+                                                    me?.raceAgain
+                                                )}
                                             >
-                                                {player.name}
-                                            </span>
-                                        )
-                                    )}
-                            </div>
-                        </section>
-                    )}
+                                                {me?.raceAgain
+                                                    ? "Race again selected"
+                                                    : "Race again!"}
+                                            </button>
+
+                                            {isHost && (
+                                                <button
+                                                    type="button"
+                                                    className="restartGameButton"
+                                                    onClick={
+                                                        restartGame
+                                                    }
+                                                    disabled={
+                                                        !room.canRestartGame
+                                                    }
+                                                >
+                                                    Restart
+                                                    game
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="raceAgainPlayers">
+                                            <strong>
+                                                Players racing
+                                                again:
+                                            </strong>
+
+                                            {room.players
+                                                .filter(
+                                                    (
+                                                        player:
+                                                            any
+                                                    ) =>
+                                                        player.id ===
+                                                        room.hostSocketId ||
+                                                        player.raceAgain
+                                                )
+                                                .map(
+                                                    (
+                                                        player:
+                                                            any
+                                                    ) => (
+                                                        <span
+                                                            key={
+                                                                player.id
+                                                            }
+                                                        >
+                                                            {
+                                                                player.name
+                                                            }
+                                                        </span>
+                                                    )
+                                                )}
+                                        </div>
+                                    </FinalResultsReveal>
+                                )}
+                            </section>
+                        );
+                    })()}
                 </section>
 
                 <aside className="card racersPanel">
-                    <h2>Racers</h2>
+                    <h2>
+                        Racers
+                    </h2>
 
                     <div className="racers">
                         {[
@@ -1005,7 +1804,9 @@ function App() {
                             >
                                 <img
                                     src={
-                                        racerImages[name]
+                                        racerImages[
+                                        name
+                                        ]
                                     }
                                     alt={name}
                                 />
@@ -1019,12 +1820,14 @@ function App() {
 
                     <Podium
                         podium={
-                            room.podium ?? []
+                            room.podium ??
+                            []
                         }
                     />
 
                     {room.currentSideBet &&
-                        room.phase !== "lobby" && (
+                        room.phase !==
+                        "lobby" && (
                             <CurrentSideBetCard
                                 sideBet={
                                     room.currentSideBet
@@ -1032,22 +1835,29 @@ function App() {
                             />
                         )}
 
-                    <h2>Race Log</h2>
+                    <h2>
+                        Race Log
+                    </h2>
 
                     <div className="log">
-                        {room.raceLog.length ===
-                            0 ? (
+                        {room.raceLog
+                            .length === 0 ? (
                             <p>
-                                No race events yet.
+                                No race events
+                                yet.
                             </p>
                         ) : (
                             room.raceLog.map(
                                 (
-                                    line: string,
-                                    index: number
+                                    line:
+                                        string,
+                                    index:
+                                        number
                                 ) => (
                                     <p
-                                        key={`${index}-${line}`}
+                                        key={
+                                            `${index}-${line}`
+                                        }
                                     >
                                         {line}
                                     </p>
@@ -1058,38 +1868,6 @@ function App() {
                 </aside>
             </section>
         </main>
-    );
-}
-
-function CurrentCard({
-    card
-}: {
-    card: CurrentCardDisplay | null;
-}) {
-    if (!card) {
-        return (
-            <div className="currentCard">
-                <span>
-                    Last card drawn
-                </span>
-
-                <strong>
-                    No card has been drawn yet
-                </strong>
-            </div>
-        );
-    }
-
-    return (
-        <div className="currentCard">
-            <span>
-                Last card drawn
-            </span>
-
-            <strong>
-                {card.fullName}
-            </strong>
-        </div>
     );
 }
 
@@ -1105,4 +1883,8 @@ createRoot(
     document.getElementById(
         "root"
     )!
-).render(<App />);
+).render(
+    <SoundProvider>
+        <App />
+    </SoundProvider>
+);

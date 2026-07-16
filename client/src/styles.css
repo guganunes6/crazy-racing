@@ -74,6 +74,7 @@ input {
 }
 
 .menu {
+    position: relative;
     width: min(420px, 100%);
     display: flex;
     flex-direction: column;
@@ -139,11 +140,15 @@ input {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border: 2px solid transparent;
-    border-radius: 10px;
+    border: 1px solid #334155;
+    border-radius: 12px;
     padding: 10px;
     background: #0f172a;
     transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.playerSelf {
+    border-color: #38bdf8;
 }
 
 .playerCurrentDrafter {
@@ -187,6 +192,11 @@ input {
 .playerNotReady {
     background: rgba(239, 68, 68, 0.18);
     color: #fecaca;
+}
+
+.importedReplayPage {
+    width: min( 1400px, 100% );
+    margin: 0 auto;
 }
 
 .secretSubmissionStatus {
@@ -273,6 +283,10 @@ input {
 
 .racerBadgeQUEEN {
     border-color: #e11d48;
+}
+
+.raceBoardStage {
+    position: relative;
 }
 
 .raceDeckStatus {
@@ -367,30 +381,36 @@ input {
 }
 
 .raceAgainControls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
 }
 
 .restartGameButton {
-  background: #22c55e;
-  color: #052e16;
+    background: #22c55e;
+    color: #052e16;
 }
 
 .raceAgainPlayers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
 }
 
-.raceAgainPlayers span {
-  border-radius: 999px;
-  padding: 5px 9px;
-  background: #1e293b;
-  color: #cbd5e1;
-  font-size: 12px;
+    .raceAgainPlayers span {
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: #1e293b;
+        color: #cbd5e1;
+        font-size: 12px;
+    }
+
+.replayRaceButton {
+    align-self: center;
+    background: #38bdf8;
+    color: #082f49;
 }
 
 .doubleBetFullChoices {
@@ -398,6 +418,111 @@ input {
     flex-wrap: wrap;
     align-items: flex-start;
     gap: 18px;
+}
+
+.checkRaceResultsButton {
+    padding: 15px 22px;
+    background: #22c55e;
+    color: #052e16;
+    font-size: 18px;
+    letter-spacing: 0.03em;
+}
+
+    .checkRaceResultsButton:disabled {
+        background: #475569;
+        color: #cbd5e1;
+    }
+
+.finalReplayHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
+    border: 2px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    background: #0f172a;
+}
+
+.finalReplayHistoryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+    .finalReplayHistoryHeader span {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .finalReplayHistoryHeader h3 {
+        margin: 4px 0 0;
+        color: #facc15;
+    }
+
+    .finalReplayHistoryHeader p {
+        max-width: 320px;
+        margin: 0;
+        color: #cbd5e1;
+        line-height: 1.4;
+        text-align: right;
+    }
+
+.finalReplayButtons {
+    display: grid;
+    grid-template-columns: repeat( auto-fit, minmax(150px, 1fr) );
+    gap: 12px;
+}
+
+.finalReplayButton {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin: 0;
+    border: 2px solid #475569;
+    padding: 14px;
+    background: #1e293b;
+    color: #f8fafc;
+    text-align: left;
+}
+
+    .finalReplayButton:hover:not(:disabled) {
+        border-color: #38bdf8;
+        background: #0c4a6e;
+    }
+
+    .finalReplayButton span {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .finalReplayButton strong {
+        color: #f8fafc;
+        font-size: 16px;
+    }
+
+.finalReplayUnavailable {
+    margin: 0;
+    color: #94a3b8;
+}
+
+@media (max-width: 700px) {
+    .finalReplayHistoryHeader {
+        flex-direction: column;
+    }
+
+        .finalReplayHistoryHeader p {
+            max-width: none;
+            text-align: left;
+        }
 }
 
 .finalResultCard {
@@ -409,6 +534,22 @@ input {
     padding: 14px;
     background: #0f172a;
 }
+
+.finalResultCardWinner {
+    border-color: #facc15;
+    background: linear-gradient( 145deg, rgba( 250, 204, 21, 0.14 ), transparent 52% ), #172033;
+}
+
+    .finalResultCardWinner
+    .finalResultRanking > span {
+        color: #facc15;
+        text-shadow: 0 0 12px rgba( 250, 204, 21, 0.7 );
+    }
+
+    .finalResultCardWinner
+    .finalResultMoney {
+        color: #facc15;
+    }
 
 .finalResultRanking {
     display: flex;
