@@ -9,6 +9,7 @@ import type {
     TicketStackKey
 } from "@crazy-racing/shared";
 
+import { useSound } from "../../audio/useSound";
 import {
     MascotBetTicketView,
     SideBetTicketView
@@ -53,6 +54,10 @@ export function BettingPhase({
     const isMyTurn =
         draft.currentPlayerId === socketPlayerId;
 
+    const {
+        playEffect
+    } = useSound();
+
     function selectTicket(
         stack: TicketStackKey,
         risk: BetRiskSide
@@ -60,6 +65,13 @@ export function BettingPhase({
         if (!isMyTurn) {
             return;
         }
+
+        playEffect(
+            "bet-draft",
+            {
+                volume: 0.55
+            }
+        );
 
         setSelectedStack(stack);
         setSelectedRisk(risk);
@@ -73,6 +85,13 @@ export function BettingPhase({
         ) {
             return;
         }
+
+        playEffect(
+            "ui-confirm",
+            {
+                volume: 0.7
+            }
+        );
 
         onConfirmDraft(
             selectedStack,

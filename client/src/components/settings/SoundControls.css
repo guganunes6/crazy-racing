@@ -1,0 +1,87 @@
+.soundControls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 12px;
+    background: #0f172a;
+}
+
+.soundControlsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+    .soundControlsHeader > div {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .soundControlsHeader span {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .soundControlsHeader strong {
+        color: #f8fafc;
+        font-size: 13px;
+    }
+
+    .soundControlsHeader button {
+        margin: 0;
+        padding: 7px 10px;
+        background: #22c55e;
+        color: #052e16;
+        font-size: 11px;
+    }
+
+    .soundControlsHeader
+    .soundMutedButton {
+        background: #475569;
+        color: #f8fafc;
+    }
+
+.soundControlSlider {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) 38px;
+    align-items: center;
+    gap: 8px;
+}
+
+    .soundControlSlider > span,
+    .soundControlSlider output {
+        color: #cbd5e1;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .soundControlSlider output {
+        text-align: right;
+    }
+
+    .soundControlSlider input {
+        width: 100%;
+        accent-color: #facc15;
+    }
+
+        .soundControlSlider input:disabled {
+            opacity: 0.45;
+        }
+
+@media (max-width: 700px) {
+    .soundControlsHeader {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+        .soundControlsHeader button {
+            width: 100%;
+        }
+}

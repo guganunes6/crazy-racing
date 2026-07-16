@@ -1,0 +1,153 @@
+.audioMenuContainer {
+    position: relative;
+    z-index: 120;
+}
+
+.audioMenuContainerInitial {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+}
+
+.audioMenuToggle {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    padding: 0;
+    background: #0f172a;
+    color: white;
+    font-size: 19px;
+    line-height: 1;
+}
+
+    .audioMenuToggle:hover {
+        border-color: #facc15;
+        transform: translateY(-1px);
+    }
+
+.audioMenuPopup {
+    position: absolute;
+    top: calc(100% + 9px);
+    right: 0;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 310px;
+    border: 1px solid #475569;
+    border-radius: 15px;
+    padding: 14px;
+    box-sizing: border-box;
+    background: rgba(15, 23, 42, 0.98);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+}
+
+.audioMenuHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+    .audioMenuHeader > div {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .audioMenuHeader span {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .audioMenuHeader strong {
+        color: #f8fafc;
+        font-size: 14px;
+    }
+
+.audioMuteButton {
+    margin: 0;
+    padding: 7px 10px;
+    background: #475569;
+    color: white;
+    font-size: 11px;
+}
+
+.audioSlider {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.audioSliderHeader {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: #cbd5e1;
+    font-size: 11px;
+}
+
+.audioSliderTrack {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) 36px;
+    align-items: center;
+    gap: 7px;
+}
+
+    .audioSliderTrack span {
+        color: #94a3b8;
+        font-size: 9px;
+        font-weight: 800;
+    }
+
+        .audioSliderTrack span:last-child {
+            text-align: right;
+        }
+
+    .audioSliderTrack input {
+        width: 100%;
+        margin: 0;
+        accent-color: #facc15;
+    }
+
+        .audioSliderTrack input:disabled {
+            opacity: 0.4;
+        }
+
+.audioMenuActions {
+    display: grid;
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+    gap: 7px;
+}
+
+    .audioMenuActions button {
+        min-height: 38px;
+        margin: 0;
+        padding: 6px;
+        background: #334155;
+        color: #f8fafc;
+        font-size: 9px;
+        line-height: 1.15;
+    }
+
+        .audioMenuActions button:hover:not( :disabled ) {
+            background: #475569;
+        }
+
+@media (max-width: 500px) {
+    .audioMenuPopup {
+        position: fixed;
+        top: 70px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+    }
+}

@@ -8,6 +8,10 @@ import type {
     RaceEvent
 } from "@crazy-racing/shared";
 
+import {
+    useSound
+} from "../../audio/useSound";
+
 import "./RaceCountdown.css";
 
 type CardsBurnedEvent =
@@ -68,6 +72,10 @@ export function RaceCountdown({
     const timersRef =
         useRef<number[]>([]);
 
+    const {
+        playEffect
+    } = useSound();
+
     useEffect(() => {
         const latestBurnEvent =
             [...raceEvents]
@@ -114,6 +122,13 @@ export function RaceCountdown({
 
         setCountdownIndex(0);
 
+        playEffect(
+            "countdown-tick",
+            {
+                volume: 0.7
+            }
+        );
+
         onActiveChange?.(
             true
         );
@@ -127,6 +142,17 @@ export function RaceCountdown({
             const timer =
                 window.setTimeout(
                     () => {
+                        playEffect(
+                            index === 3
+                                ? "countdown-go"
+                                : "countdown-tick",
+                            {
+                                volume:
+                                    index === 3
+                                        ? 0.95
+                                        : 0.7
+                            }
+                        );
                         setCountdownIndex(
                             index
                         );

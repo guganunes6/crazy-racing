@@ -8,6 +8,10 @@ import {
     CARD_REVEAL_DURATION_MS
 } from "./AnimationTiming";
 
+import {
+    useSound
+} from "../audio/useSound";
+
 export type CardAnimationPhase =
     | "hidden"
     | "entering"
@@ -46,7 +50,11 @@ export function useCardAnimation({
     const previousCardKeyRef =
         useRef<
             string | number | null
-        >(cardKey);
+            >(cardKey);
+
+    const {
+        playEffect
+    } = useSound();
 
     useEffect(() => {
         clearTimer();
@@ -84,6 +92,12 @@ export function useCardAnimation({
         );
 
         setPhase("entering");
+        playEffect(
+            "card-flip",
+            {
+                volume: 0.75
+            }
+        );
 
         timeoutRef.current =
             window.setTimeout(

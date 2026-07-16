@@ -1,4 +1,13 @@
-﻿import type {
+﻿import {
+    useEffect,
+    useRef
+} from "react";
+
+import {
+    useSound
+} from "../audio/useSound";
+
+import type {
     PodiumEntry,
     RacerName
 } from "./BoardModel";
@@ -31,6 +40,35 @@ export function Podium({
         3,
         4
     ];
+
+    const {
+        playEffect
+    } = useSound();
+
+    const previousEntryCountRef =
+        useRef(
+            podium.length
+        );
+
+    useEffect(() => {
+        if (
+            podium.length >
+            previousEntryCountRef.current
+        ) {
+            playEffect(
+                "podium",
+                {
+                    volume: 0.75
+                }
+            );
+        }
+
+        previousEntryCountRef.current =
+            podium.length;
+    }, [
+        playEffect,
+        podium.length
+    ]);
 
     return (
         <aside className="podiumPanel">

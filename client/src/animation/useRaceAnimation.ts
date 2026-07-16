@@ -15,6 +15,10 @@ import {
     RACE_ANIMATION_STEP_DURATION_MS
 } from "./AnimationTiming";
 
+import {
+    useSound
+} from "../audio/useSound";
+
 type RaceStateEvent =
     Extract<
         RaceEvent,
@@ -144,6 +148,10 @@ export function useRaceAnimation({
                 racers
             )
         );
+
+    const {
+        playEffect
+    } = useSound();
 
     function applyVisualRacers(
         nextRacers:
@@ -389,6 +397,11 @@ export function useRaceAnimation({
                     step.trigger
                 );
 
+                playRaceEventSound(
+                    step.trigger,
+                    playEffect
+                );
+
                 setActiveCardOwner(
                     step.cardOwner
                 );
@@ -519,6 +532,16 @@ export function useRaceAnimation({
 
                 await wait(
                     MOVE_ONE_SPACE_DURATION_MS
+                );
+                playEffect(
+                    "movement-step",
+                    {
+                        volume: 0.42,
+                        playbackRate:
+                            movement.crawling
+                                ? 0.75
+                                : 1
+                    }
                 );
             }
         }
@@ -872,4 +895,110 @@ function wait(
             );
         }
     );
+}
+
+function playRaceEventSound(
+    event:
+        RaceEvent | null,
+
+    playEffect: (
+        name:
+            import(
+            "../audio/SoundManager"
+            ).SoundEffectName,
+        options?: {
+            volume?: number;
+            playbackRate?: number;
+        }
+    ) => void
+): void {
+    if (!event) {
+        return;
+    }
+
+    switch (event.type) {
+        case "RACER_SWERVED":
+            playEffect(
+                "swerve",
+                {
+                    volume: 0.65
+                }
+            );
+            return;
+
+        case "COLLISION":
+            playEffect(
+                "collision",
+                {
+                    volume: 0.9
+                }
+            );
+            return;
+
+        case "RACER_FELL":
+            playEffect(
+                "fall",
+                {
+                    volume: 0.8
+                }
+            );
+            return;
+
+        case "RACER_RECOVERED":
+            playEffect(
+                "recover",
+                {
+                    volume: 0.7
+                }
+            );
+            return;
+
+        case "RACER_TURNED":
+            playEffect(
+                "turn",
+                {
+                    volume: 0.65
+                }
+            );
+            return;
+
+        case "RACER_FINISHED":
+            playEffect(
+                "finish",
+                {
+                    volume: 1
+                }
+            );
+            return;
+
+        case "RACER_DISQUALIFIED":
+            playEffect(
+                "dq",
+                {
+                    volume: 0.9
+                }
+            );
+            return;
+
+        case "TRACK_FOLDED":
+            playEffect(
+                "fold",
+                {
+                    volume: 0.9
+                }
+            );
+            return;
+
+        case "DECK_RESHUFFLED":
+            playEffect(
+                "reshuffle",
+                {
+                    volume: 0.75
+                }
+            );
+            return;
+
+        default:
+            return;
+    }
 }

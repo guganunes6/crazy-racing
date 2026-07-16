@@ -1,6 +1,7 @@
 import React, {
     useEffect,
     useMemo,
+    useRef,
     useState
 } from "react";
 import { createRoot } from "react-dom/client";
@@ -17,6 +18,12 @@ import {
     type TicketStackKey
 } from "@crazy-racing/shared";
 
+import { useRaceAnimation } from "./animation/useRaceAnimation";
+import { SoundProvider } from "./audio/SoundProvider";
+import {
+    useGameMusic,
+    useSound
+} from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
 import { BettingPhase } from "./components/betting/BettingPhase";
@@ -35,7 +42,8 @@ import {
     FinalResultEntry,
     FinalResultsReveal
 } from "./components/results/FinalResultsReveal";
-import { useRaceAnimation } from "./animation/useRaceAnimation";
+import { AudioMenuButton } from "./components/settings/AudioMenuButton";
+import { SoundControls } from "./components/settings/SoundControls";
 
 import "./styles.css";
 
@@ -114,6 +122,50 @@ function App() {
         isCountdownActive,
         setIsCountdownActive
     ] = useState(false);
+
+    const {
+        playEffect
+    } = useSound();
+
+    const musicMode =
+        room?.phase === "racing" ||
+            room?.phase ===
+            "reshuffle-required" ||
+            room?.phase ===
+            "race-complete" ||
+            Boolean(activeReplay)
+            ? "race"
+            : "ambience";
+
+    useGameMusic(
+        musicMode
+    );
+
+    const previousPhaseRef =
+        useRef<string | null>(
+            null
+        );
+
+    useEffect(() => {
+        if (
+            room?.phase === "final" &&
+            previousPhaseRef.current !==
+            "final"
+        ) {
+            playEffect(
+                "victory",
+                {
+                    volume: 0.9
+                }
+            );
+        }
+
+        previousPhaseRef.current =
+            room?.phase ?? null;
+    }, [
+        playEffect,
+        room?.phase
+    ]);
 
     useEffect(() => {
         function handleRoomUpdate(
@@ -453,11 +505,25 @@ function App() {
                 );
             }
         );
+
+        playEffect(
+            "ui-confirm",
+            {
+                volume: 0.7
+            }
+        );
     }
 
     function toggleCard(
         cardId: string
     ) {
+        playEffect(
+            "ui-select",
+            {
+                volume: 0.55
+            }
+        );
+
         if (
             me?.secretCardsSubmitted
         ) {
@@ -552,6 +618,13 @@ function App() {
                 ) {
                     return;
                 }
+
+                playEffect(
+                    "ui-confirm",
+                    {
+                        volume: 0.7
+                    }
+                );
 
                 setSelectedCards([]);
             }
@@ -748,6 +821,10 @@ function App() {
         return (
             <main className="page center">
                 <div className="card menu">
+                    <AudioMenuButton
+                        placement="initial"
+                    />
+
                     <h1>
                         CRAZY RACING
                     </h1>
@@ -829,6 +906,10 @@ function App() {
                     CRAZY RACING
                 </h1>
 
+                <AudioMenuButton
+                    placement="header"
+                />
+
                 <div className="roomInformation">
                     <span>
                         Room:{" "}
@@ -868,6 +949,11 @@ function App() {
                                 <div
                                     className={[
                                         "player",
+
+                                        player.id ===
+                                            socket.id
+                                            ? "playerSelf"
+                                            : "",
 
                                         room
                                             .bettingDraft
@@ -1771,4 +1857,8 @@ createRoot(
     document.getElementById(
         "root"
     )!
-).render(<App />);
+).render(
+    <SoundProvider>
+        <App />
+    </SoundProvider>
+);
