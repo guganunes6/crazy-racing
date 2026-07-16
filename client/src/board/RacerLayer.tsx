@@ -38,19 +38,28 @@ export function RacerLayer({
     activeEvent = null,
     activeCardOwner = null
 }: RacerLayerProps) {
-    const activeRacers =
+    const terminalAnimationRacer =
+        getTerminalAnimationRacer(
+            activeEvent
+        );
+
+    const visibleRacers =
         racers.filter(
             (racer) =>
-                !racer.finished &&
-                !racer.dq
+                (
+                    !racer.finished &&
+                    !racer.dq
+                ) ||
+                racer.name ===
+                terminalAnimationRacer
         );
 
     const positionedRacers:
         PositionedRacer[] =
-        activeRacers.map(
+        visibleRacers.map(
             (racer) => {
                 const sameSpace =
-                    activeRacers.filter(
+                    visibleRacers.filter(
                         (candidate) =>
                             candidate.lane ===
                             racer.lane &&
@@ -141,12 +150,46 @@ export function RacerLayer({
                                     racer.facing
                                 }
                             />
+
+                            {eventClass ===
+                                "racerAnimatingDq" && (
+                                    <span className="racerDqSmoke">
+                                        <i />
+                                        <i />
+                                        <i />
+                                    </span>
+                                )}
+
+                            {eventClass ===
+                                "racerAnimatingFinish" && (
+                                    <span className="racerFinishSparkles">
+                                        <i />
+                                        <i />
+                                        <i />
+                                        <i />
+                                    </span>
+                                )}
                         </div>
                     );
                 }
             )}
         </div>
     );
+}
+
+function getTerminalAnimationRacer(
+    event: RaceEvent | null
+): RacerName | null {
+    if (
+        event?.type ===
+        "RACER_FINISHED" ||
+        event?.type ===
+        "RACER_DISQUALIFIED"
+    ) {
+        return event.racer;
+    }
+
+    return null;
 }
 
 function getEventClass(
@@ -160,7 +203,8 @@ function getEventClass(
     switch (event.type) {
         case "RACER_MOVED":
             if (
-                event.racer !== racer
+                event.racer !==
+                racer
             ) {
                 return "";
             }
@@ -170,22 +214,26 @@ function getEventClass(
                 : "racerAnimatingMove";
 
         case "RACER_SWERVED":
-            return event.racer === racer
+            return event.racer ===
+                racer
                 ? "racerAnimatingSwerve"
                 : "";
 
         case "RACER_FELL":
-            return event.racer === racer
+            return event.racer ===
+                racer
                 ? "racerAnimatingFall"
                 : "";
 
         case "RACER_RECOVERED":
-            return event.racer === racer
+            return event.racer ===
+                racer
                 ? "racerAnimatingRecover"
                 : "";
 
         case "RACER_TURNED":
-            return event.racer === racer
+            return event.racer ===
+                racer
                 ? "racerAnimatingTurn"
                 : "";
 
@@ -197,20 +245,20 @@ function getEventClass(
                 return "racerAnimatingHit";
             }
 
-            return (
-                event.affectedRacer ===
-                    racer
-                    ? "racerAnimatingCollision"
-                    : ""
-            );
+            return event.affectedRacer ===
+                racer
+                ? "racerAnimatingCollision"
+                : "";
 
         case "RACER_DISQUALIFIED":
-            return event.racer === racer
+            return event.racer ===
+                racer
                 ? "racerAnimatingDq"
                 : "";
 
         case "RACER_FINISHED":
-            return event.racer === racer
+            return event.racer ===
+                racer
                 ? "racerAnimatingFinish"
                 : "";
 

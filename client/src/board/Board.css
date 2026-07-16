@@ -37,7 +37,7 @@
 
 .boardLane {
     display: grid;
-    grid-template-columns: 70px repeat(14, minmax(0, 1fr));
+    grid-template-columns: 70px repeat( 14, minmax(0, 1fr) );
     min-height: 96px;
     border-bottom: 3px solid rgba(255, 255, 255, 0.35);
 }
@@ -128,6 +128,8 @@
     writing-mode: vertical-rl;
 }
 
+/* Mascots */
+
 .mascotStack {
     position: absolute;
     inset: 0;
@@ -138,7 +140,7 @@
     position: absolute;
     object-fit: contain;
     transform-origin: center;
-    transition: transform 250ms ease, left 200ms ease, top 200ms ease, width 200ms ease, height 200ms ease, opacity 250ms ease;
+    transition: transform 250ms ease, left 200ms ease, top 200ms ease, width 200ms ease, height 200ms ease, opacity 250ms ease, filter 220ms ease;
 }
 
 .mascotCount1 {
@@ -224,6 +226,8 @@
     filter: grayscale(1);
 }
 
+/* Podium */
+
 .podiumPanel {
     margin-top: 18px;
     border: 4px solid #334155;
@@ -281,6 +285,7 @@
 }
 
 .podiumRacer {
+    position: relative;
     display: grid;
     grid-template-columns: 34px 1fr;
     align-items: center;
@@ -303,7 +308,7 @@
         color: #fecaca;
     }
 
-/* Milestone 4: animated racer overlay */
+/* Animated racer overlay */
 
 .racerLayer {
     position: absolute;
@@ -324,8 +329,8 @@
     width: calc(100% / 14);
     height: 25%;
     transform: translateX( calc( var(--racer-position) * 100% ) ) translateY( calc( var(--racer-lane) * 100% ) );
-    transition: transform 480ms cubic-bezier( 0.22, 0.78, 0.24, 1 ), opacity 220ms ease, filter 220ms ease;
-    will-change: transform;
+    transition: transform 180ms cubic-bezier( 0.22, 0.78, 0.24, 1 ), opacity 220ms ease, filter 220ms ease;
+    will-change: transform, opacity, filter;
 }
 
     .racerToken .mascot {
@@ -342,6 +347,8 @@
     animation: boardLivePulse 900ms ease-in-out infinite;
 }
 
+/* Card glow */
+
 .racerAnimatingMove,
 .racerCardAffected {
     filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
@@ -351,6 +358,8 @@
     filter: drop-shadow( 0 0 8px rgba(250, 204, 21, 0.85) ) drop-shadow( 0 0 16px rgba(250, 204, 21, 0.5) );
     animation: greenCardAffectedGlow 520ms ease-in-out;
 }
+
+/* Standard racer actions */
 
 .racerAnimatingCrawl
 .mascot {
@@ -363,8 +372,6 @@
 }
 
 .racerAnimatingFall
-.mascot,
-.racerAnimatingCollision
 .mascot {
     animation: mascotImpact 420ms ease-out;
 }
@@ -379,20 +386,137 @@
     animation: mascotTurn 420ms ease-in-out;
 }
 
+/* Improved collision animations */
+
 .racerAnimatingHit
 .mascot {
-    animation: mascotHit 360ms ease-out;
+    animation: mascotCollisionAttacker 420ms cubic-bezier( 0.18, 0.75, 0.22, 1 );
 }
+
+.racerAnimatingCollision
+.mascot {
+    animation: mascotCollisionVictim 480ms cubic-bezier( 0.18, 0.75, 0.22, 1 );
+}
+
+/* Finish animation */
 
 .racerAnimatingFinish {
-    animation: mascotFinish 520ms ease-out;
+    z-index: 20;
+    animation: mascotFinishExit 720ms cubic-bezier( 0.16, 0.78, 0.22, 1 ) forwards;
 }
+
+    .racerAnimatingFinish::before {
+        content: "";
+        position: absolute;
+        top: 24%;
+        right: 40%;
+        left: -140%;
+        height: 52%;
+        border-radius: 999px;
+        background: linear-gradient( to right, transparent, rgba(255, 255, 255, 0.18), rgba(250, 204, 21, 0.82) );
+        filter: blur(5px);
+        animation: finishSpeedStreak 720ms ease-out forwards;
+    }
+
+    .racerAnimatingFinish
+    .mascot {
+        animation: finishMascotPop 720ms ease-out forwards;
+    }
+
+.racerFinishSparkles {
+    position: absolute;
+    inset: -18px;
+    pointer-events: none;
+}
+
+    .racerFinishSparkles i {
+        position: absolute;
+        width: 9px;
+        height: 9px;
+        background: #facc15;
+        clip-path: polygon( 50% 0%, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0% 50%, 39% 38% );
+        animation: finishSparkleBurst 680ms ease-out forwards;
+    }
+
+        .racerFinishSparkles i:nth-child(1) {
+            top: 4%;
+            left: 14%;
+            --sparkle-x: -20px;
+            --sparkle-y: -25px;
+        }
+
+        .racerFinishSparkles i:nth-child(2) {
+            top: -4%;
+            right: 12%;
+            --sparkle-x: 20px;
+            --sparkle-y: -30px;
+            animation-delay: 70ms;
+        }
+
+        .racerFinishSparkles i:nth-child(3) {
+            bottom: 6%;
+            left: 2%;
+            --sparkle-x: -24px;
+            --sparkle-y: 22px;
+            animation-delay: 130ms;
+        }
+
+        .racerFinishSparkles i:nth-child(4) {
+            right: -2%;
+            bottom: 4%;
+            --sparkle-x: 26px;
+            --sparkle-y: 20px;
+            animation-delay: 190ms;
+        }
+
+/* DQ animation */
 
 .racerAnimatingDq {
-    animation: mascotDq 520ms ease-out;
+    z-index: 20;
+    animation: mascotDqExit 760ms cubic-bezier( 0.32, 0.1, 0.24, 1 ) forwards;
 }
 
-/* Milestone 4: board-wide card reactions */
+    .racerAnimatingDq
+    .mascot {
+        animation: dqMascotSpin 760ms ease-in forwards;
+    }
+
+.racerDqSmoke {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+    .racerDqSmoke i {
+        position: absolute;
+        top: 44%;
+        left: 44%;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        background: rgba(203, 213, 225, 0.78);
+        filter: blur(2px);
+        animation: dqSmokePuff 720ms ease-out forwards;
+    }
+
+        .racerDqSmoke i:nth-child(1) {
+            --smoke-x: -34px;
+            --smoke-y: -48px;
+        }
+
+        .racerDqSmoke i:nth-child(2) {
+            --smoke-x: 6px;
+            --smoke-y: -62px;
+            animation-delay: 90ms;
+        }
+
+        .racerDqSmoke i:nth-child(3) {
+            --smoke-x: 38px;
+            --smoke-y: -42px;
+            animation-delay: 170ms;
+        }
+
+/* Board-wide reactions */
 
 .boardFrame::after {
     content: "";
@@ -431,15 +555,85 @@
 .boardFrame::after {
     opacity: 1;
     background: radial-gradient( circle at 90% 50%, rgba(250, 204, 21, 0.55), transparent 38% );
-    animation: finishLineCelebration 560ms ease-out;
+    animation: finishLineCelebration 720ms ease-out;
 }
 
 .boardDqEvent
 .boardFrame::after {
     opacity: 1;
     background: repeating-linear-gradient( -45deg, rgba(239, 68, 68, 0.24), rgba(239, 68, 68, 0.24) 12px, transparent 12px, transparent 24px );
-    animation: dqBoardFlash 520ms ease-out;
+    animation: dqBoardFlash 760ms ease-out;
 }
+
+/* Podium entrance and winner highlight */
+
+.podiumPlaceOccupied {
+    animation: podiumPlaceFlash 620ms ease-out;
+}
+
+.podiumRacer {
+    opacity: 0;
+    transform-origin: center bottom;
+    animation: podiumRacerEntrance 620ms cubic-bezier( 0.16, 0.82, 0.24, 1 ) var( --podium-entry-delay, 0ms ) forwards;
+}
+
+.podiumRacerWinner {
+    overflow: visible;
+    border: 1px solid rgba(250, 204, 21, 0.72);
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.36);
+    animation: podiumRacerEntrance 620ms cubic-bezier( 0.16, 0.82, 0.24, 1 ) var( --podium-entry-delay, 0ms ) forwards, podiumWinnerPulse 1600ms 760ms ease-in-out infinite;
+}
+
+    .podiumRacerWinner img {
+        animation: podiumWinnerMascotBounce 1800ms 760ms ease-in-out infinite;
+    }
+
+.podiumWinnerSparkles {
+    display: none;
+    position: absolute;
+    inset: -7px;
+    pointer-events: none;
+}
+
+.podiumRacerWinner
+.podiumWinnerSparkles {
+    display: block;
+}
+
+.podiumWinnerSparkles i {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #facc15;
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.88);
+    animation: podiumWinnerSparkle 1300ms ease-in-out infinite;
+}
+
+    .podiumWinnerSparkles i:nth-child(1) {
+        top: 0;
+        left: 8%;
+    }
+
+    .podiumWinnerSparkles i:nth-child(2) {
+        top: -4px;
+        right: 12%;
+        animation-delay: 240ms;
+    }
+
+    .podiumWinnerSparkles i:nth-child(3) {
+        right: 2%;
+        bottom: 2%;
+        animation-delay: 480ms;
+    }
+
+    .podiumWinnerSparkles i:nth-child(4) {
+        bottom: -3px;
+        left: 18%;
+        animation-delay: 720ms;
+    }
+
+/* Keyframes */
 
 @keyframes boardLivePulse {
     0%, 100% {
@@ -521,51 +715,156 @@
     }
 }
 
-@keyframes mascotHit {
+@keyframes mascotCollisionAttacker {
     0%, 100% {
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
+        filter: brightness(1);
     }
 
     35% {
-        transform: translateX(8%);
+        transform: translateX(12%) scaleX(1.13) scaleY(0.88);
+        filter: brightness(1.35);
     }
 
-    70% {
-        transform: translateX(-4%);
+    65% {
+        transform: translateX(-4%) scaleX(0.94) scaleY(1.06);
     }
 }
 
-@keyframes mascotFinish {
+@keyframes mascotCollisionVictim {
+    0% {
+        transform: translateX(0) scale(1);
+        filter: brightness(1);
+    }
+
+    22% {
+        transform: translateX(14%) scaleX(1.18) scaleY(0.8);
+        filter: brightness(1.65);
+    }
+
+    48% {
+        transform: translateX(-8%) scaleX(0.88) scaleY(1.12);
+        filter: brightness(0.8);
+    }
+
+    74% {
+        transform: translateX(4%) scale(1.04);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+        filter: brightness(1);
+    }
+}
+
+@keyframes mascotFinishExit {
+    0%, 72% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes finishSpeedStreak {
+    0% {
+        opacity: 0;
+        transform: scaleX(0.15);
+        transform-origin: right center;
+    }
+
+    28% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: scaleX(1.25);
+        transform-origin: right center;
+    }
+}
+
+@keyframes finishMascotPop {
     0% {
         opacity: 1;
         filter: brightness(1);
     }
 
-    60% {
+    42% {
         opacity: 1;
+        transform: scale(1.28);
         filter: brightness(1.8);
+    }
+
+    72% {
+        opacity: 1;
+        transform: scale(1.08);
+        filter: brightness(1.35);
     }
 
     100% {
         opacity: 0;
+        transform: translateX(28%) scale(0.84);
         filter: brightness(2);
     }
 }
 
-@keyframes mascotDq {
+@keyframes finishSparkleBurst {
     0% {
-        opacity: 1;
-        filter: grayscale(0);
+        opacity: 0;
+        transform: translate(0, 0) scale(0.3) rotate(0deg);
     }
 
-    45% {
-        opacity: 0.8;
-        filter: grayscale(1);
+    35% {
+        opacity: 1;
     }
 
     100% {
         opacity: 0;
-        filter: grayscale(1);
+        transform: translate( var(--sparkle-x), var(--sparkle-y) ) scale(1.4) rotate(180deg);
+    }
+}
+
+@keyframes mascotDqExit {
+    0%, 72% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes dqMascotSpin {
+    0% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+        filter: grayscale(0);
+    }
+
+    42% {
+        opacity: 1;
+        transform: scale(1.08) rotate(170deg);
+        filter: grayscale(0.45);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0.08) rotate(720deg);
+        filter: grayscale(1) blur(2px);
+    }
+}
+
+@keyframes dqSmokePuff {
+    0% {
+        opacity: 0.85;
+        transform: translate(0, 0) scale(0.35);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate( var(--smoke-x), var(--smoke-y) ) scale(2.2);
     }
 }
 
@@ -671,12 +970,80 @@
     }
 }
 
+@keyframes podiumPlaceFlash {
+    0% {
+        filter: brightness(1);
+    }
+
+    46% {
+        filter: brightness(1.65);
+    }
+
+    100% {
+        filter: brightness(1);
+    }
+}
+
+@keyframes podiumRacerEntrance {
+    0% {
+        opacity: 0;
+        transform: translateY(-42px) scale(0.68) rotate(-7deg);
+    }
+
+    58% {
+        opacity: 1;
+        transform: translateY(5px) scale(1.12) rotate(2deg);
+    }
+
+    78% {
+        transform: translateY(-3px) scale(0.97);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+    }
+}
+
+@keyframes podiumWinnerPulse {
+    0%, 100% {
+        box-shadow: 0 0 9px rgba(250, 204, 21, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(250, 204, 21, 0.72);
+    }
+}
+
+@keyframes podiumWinnerMascotBounce {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-4px) scale(1.08);
+    }
+}
+
+@keyframes podiumWinnerSparkle {
+    0%, 100% {
+        opacity: 0.2;
+        transform: scale(0.5);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.45);
+    }
+}
+
+/* Accessibility */
+
 @media ( prefers-reduced-motion: reduce ) {
     .racerToken,
     .racerToken
     .mascot {
         transition-duration: 1ms;
-        animation-duration: 1ms !important;
     }
 
     .boardAnimating
@@ -696,7 +1063,36 @@
     .boardFrame::after,
     .boardDqEvent
     .boardFrame::after,
-    .racerGreenAffected {
+    .racerGreenAffected,
+    .racerAnimatingCrawl
+    .mascot,
+    .racerAnimatingSwerve
+    .mascot,
+    .racerAnimatingFall
+    .mascot,
+    .racerAnimatingRecover
+    .mascot,
+    .racerAnimatingTurn
+    .mascot,
+    .racerAnimatingHit
+    .mascot,
+    .racerAnimatingCollision
+    .mascot,
+    .racerAnimatingFinish,
+    .racerAnimatingFinish::before,
+    .racerAnimatingFinish
+    .mascot,
+    .racerFinishSparkles i,
+    .racerAnimatingDq,
+    .racerAnimatingDq
+    .mascot,
+    .racerDqSmoke i,
+    .podiumPlaceOccupied,
+    .podiumRacer,
+    .podiumRacerWinner,
+    .podiumRacerWinner img,
+    .podiumWinnerSparkles i {
         animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
     }
 }

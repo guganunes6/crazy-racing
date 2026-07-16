@@ -530,6 +530,22 @@ input::placeholder {
     background: #0f172a;
 }
 
+.finalResultCardWinner {
+    border-color: #facc15;
+    background: linear-gradient( 145deg, rgba( 250, 204, 21, 0.14 ), transparent 52% ), #172033;
+}
+
+    .finalResultCardWinner
+    .finalResultRanking > span {
+        color: #facc15;
+        text-shadow: 0 0 12px rgba( 250, 204, 21, 0.7 );
+    }
+
+    .finalResultCardWinner
+    .finalResultMoney {
+        color: #facc15;
+    }
+
 .finalResultRanking {
     display: flex;
     align-items: center;

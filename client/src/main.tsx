@@ -31,6 +31,10 @@ import { RaceCountdown } from "./components/race/RaceCountdown";
 import { RaceReplay } from "./components/replay/RaceReplay";
 import { ReplayImportButton } from "./components/replay/ReplayImportButton";
 import { ConfettiBlast } from "./components/results/ConfettiBlast";
+import {
+    FinalResultEntry,
+    FinalResultsReveal
+} from "./components/results/FinalResultsReveal";
 import { useRaceAnimation } from "./animation/useRaceAnimation";
 
 import "./styles.css";
@@ -1401,15 +1405,26 @@ function App() {
                             </section>
                         )}
 
-                    {room.phase ===
-                        "final" && (
+                    {room.phase === "final" && (() => {
+                        const finalPlayers =
+                            [...room.players].sort(
+                                (
+                                    first: any,
+                                    second: any
+                                ) =>
+                                    second.money -
+                                    first.money
+                            );
+
+                        return (
                             <section className="finalPhase">
                                 {!activeReplay && (
                                     <ConfettiBlast
-                                        durationMs={8000}
                                         pieceCount={500}
+                                        durationMs={8000}
                                     />
                                 )}
+
                                 {activeReplay ? (
                                     <RaceReplay
                                         replay={
@@ -1422,40 +1437,39 @@ function App() {
                                         }
                                     />
                                 ) : (
-                                    <>
-                                        <h3>
-                                            Final Results
-                                        </h3>
+                                    <FinalResultsReveal>
+                                        {finalPlayers.map(
+                                            (
+                                                player: any,
+                                                index: number
+                                            ) => {
+                                                const lifeOutcome =
+                                                    getLifeOutcome(
+                                                        player.money
+                                                    );
 
-                                        {[...room.players]
-                                            .sort(
-                                                (
-                                                    first:
-                                                        any,
-                                                    second:
-                                                        any
-                                                ) =>
-                                                    second.money -
-                                                    first.money
-                                            )
-                                            .map(
-                                                (
-                                                    player:
-                                                        any,
-                                                    index:
-                                                        number
-                                                ) => {
-                                                    const lifeOutcome =
-                                                        getLifeOutcome(
-                                                            player.money
-                                                        );
-
-                                                    return (
+                                                return (
+                                                    <FinalResultEntry
+                                                        key={
+                                                            player.id
+                                                        }
+                                                        index={
+                                                            index
+                                                        }
+                                                        winner={
+                                                            index === 0
+                                                        }
+                                                    >
                                                         <article
-                                                            className="finalResultCard"
-                                                            key={
-                                                                player.id
-                                                            }
+                                                            className={[
+                                                                "finalResultCard",
+
+                                                                index === 0
+                                                                    ? "finalResultCardWinner"
+                                                                    : ""
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(" ")}
                                                         >
                                                             <div className="finalResultRanking">
                                                                 <span>
@@ -1482,8 +1496,7 @@ function App() {
 
                                                             <div className="lifeOutcome">
                                                                 <strong>
-                                                                    Life
-                                                                    outcome{" "}
+                                                                    Life outcome{" "}
                                                                     {
                                                                         lifeOutcome.amountLabel
                                                                     }
@@ -1496,9 +1509,10 @@ function App() {
                                                                 </p>
                                                             </div>
                                                         </article>
-                                                    );
-                                                }
-                                            )}
+                                                    </FinalResultEntry>
+                                                );
+                                            }
+                                        )}
 
                                         <section className="finalReplayHistory">
                                             <div className="finalReplayHistoryHeader">
@@ -1650,10 +1664,11 @@ function App() {
                                                     )
                                                 )}
                                         </div>
-                                    </>
+                                    </FinalResultsReveal>
                                 )}
                             </section>
-                        )}
+                        );
+                    })()}
                 </section>
 
                 <aside className="card racersPanel">
