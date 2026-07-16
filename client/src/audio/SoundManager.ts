@@ -3,6 +3,7 @@ export type SoundEffectName =
     | "countdown-tick"
     | "countdown-go"
     | "movement-step"
+    | "crawl"
     | "swerve"
     | "collision"
     | "fall"
@@ -16,7 +17,8 @@ export type SoundEffectName =
     | "victory"
     | "ui-select"
     | "bet-draft"
-    | "ui-confirm";
+    | "ui-confirm"
+    | "ui-unready";
 
 export type MusicMode =
     | "none"
@@ -52,6 +54,9 @@ const EFFECT_PATHS:
 
     "movement-step":
         "/audio/movement-step.wav",
+
+    crawl:
+        "/audio/crawl.wav",
 
     swerve:
         "/audio/swerve.wav",
@@ -93,16 +98,32 @@ const EFFECT_PATHS:
         "/audio/bet-draft.wav",
 
     "ui-confirm":
-        "/audio/ui-confirm.wav"
+        "/audio/ui-confirm.wav",
+
+    "ui-unready":
+        "/audio/ui-unready.wav"
 };
 
-const MUSIC_PATHS = {
-    ambience:
-        "/audio/ambience-loop.wav",
+const MUSIC_PLAYLISTS:
+    Record<
+        Exclude<
+            MusicMode,
+            "none"
+        >,
+        readonly string[]
+    > = {
+    ambience: [
+            "/audio/ambience-loop.wav",
+            "/audio/ambience-lounge-sunset.wav",
+            "/audio/ambience-midnight-lobby.wav"
+    ],
 
-    race:
-        "/audio/race-loop.wav"
-} as const;
+    race: [
+        "/audio/race-loop.wav",
+        "/audio/race-loop-old.wav",
+        "/audio/race-music-crazy-kart-2.wav"
+    ]
+};
 
 const CROSSFADE_DURATION_MS =
     1600;
@@ -110,22 +131,21 @@ const CROSSFADE_DURATION_MS =
 const FADE_INTERVAL_MS =
     35;
 
-const MUSIC_PREVIEW_DURATION_MS =
-    7000;
+const MAX_SIMULTANEOUS_EFFECTS =
+    24;
 
 type SettingsListener = (
     settings:
         SoundSettings
 ) => void;
 
+type MusicCategory =
+    Exclude<
+        MusicMode,
+        "none"
+    >;
+
 class CrazyRacingSoundManager {
-    /*
-     * Settings deliberately start from defaults every
-     * time the application loads.
-     *
-     * Nothing is stored in localStorage, so another
-     * player always starts with normal audio enabled.
-     */
     private settings:
         SoundSettings = {
             ...DEFAULT_SOUND_SETTINGS
@@ -142,19 +162,37 @@ class CrazyRacingSoundManager {
             HTMLAudioElement
         >();
 
-    private musicElements:
+    private musicIndexes:
         Record<
-            "ambience" | "race",
-            HTMLAudioElement
-        >;
+            MusicCategory,
+            number
+        > = {
+            ambience: 0,
+            race: 0
+        };
+
+    /*
+     * The element that represents the currently
+     * selected music track.
+     */
+    private activeMusic:
+        HTMLAudioElement | null =
+        null;
+
+    /*
+     * During a crossfade this stores the old track.
+     * Keeping it explicitly allows us to stop it if
+     * another track change starts before the previous
+     * fade has finished.
+     */
+    private fadingOutMusic:
+        HTMLAudioElement | null =
+        null;
 
     private musicMode:
         MusicMode = "none";
 
     private fadeTimer:
-        number | null = null;
-
-    private previewTimer:
         number | null = null;
 
     private activeEffectCount =
@@ -164,18 +202,6 @@ class CrazyRacingSoundManager {
         false;
 
     constructor() {
-        this.musicElements = {
-            ambience:
-                this.createMusicElement(
-                    MUSIC_PATHS.ambience
-                ),
-
-            race:
-                this.createMusicElement(
-                    MUSIC_PATHS.race
-                )
-        };
-
         for (
             const [
                 name,
@@ -191,7 +217,8 @@ class CrazyRacingSoundManager {
                 "auto";
 
             this.effects.set(
-                name as SoundEffectName,
+                name as
+                SoundEffectName,
                 audio
             );
         }
@@ -246,6 +273,13 @@ class CrazyRacingSoundManager {
                 )
         };
 
+        /*
+         * Cancel the previous fade before applying a
+         * new user-selected volume. Otherwise the old
+         * timer may restore its previous target volume.
+         */
+        this.cancelFade();
+
         this.applyCurrentMusicVolume();
         this.notifyListeners();
     }
@@ -255,6 +289,12 @@ class CrazyRacingSoundManager {
             ...DEFAULT_SOUND_SETTINGS
         };
 
+        this.musicIndexes = {
+            ambience: 0,
+            race: 0
+        };
+
+        this.cancelFade();
         this.applyCurrentMusicVolume();
         this.notifyListeners();
 
@@ -278,7 +318,7 @@ class CrazyRacingSoundManager {
         if (
             this.settings.muted ||
             this.activeEffectCount >=
-            24
+            MAX_SIMULTANEOUS_EFFECTS
         ) {
             return;
         }
@@ -292,10 +332,18 @@ class CrazyRacingSoundManager {
             return;
         }
 
+        /*
+         * Creating a new Audio element avoids the
+         * cloneNode() Node typing problem and permits
+         * overlapping copies of short effects.
+         */
         const audio =
-            source.cloneNode(
-                true
-            ) as HTMLAudioElement;
+            new Audio(
+                source.src
+            );
+
+        audio.preload =
+            "auto";
 
         audio.volume =
             clampVolume(
@@ -314,14 +362,16 @@ class CrazyRacingSoundManager {
         this.activeEffectCount +=
             1;
 
-        let cleanedUp = false;
+        let cleanedUp =
+            false;
 
         const cleanUp = () => {
             if (cleanedUp) {
                 return;
             }
 
-            cleanedUp = true;
+            cleanedUp =
+                true;
 
             this.activeEffectCount =
                 Math.max(
@@ -381,13 +431,25 @@ class CrazyRacingSoundManager {
         window.setTimeout(
             () => {
                 void this.playEffect(
+                    "crawl",
+                    {
+                        volume: 0.7
+                    }
+                );
+            },
+            650
+        );
+
+        window.setTimeout(
+            () => {
+                void this.playEffect(
                     "collision",
                     {
                         volume: 0.75
                     }
                 );
             },
-            700
+            1050
         );
 
         window.setTimeout(
@@ -399,7 +461,7 @@ class CrazyRacingSoundManager {
                     }
                 );
             },
-            1150
+            1450
         );
     }
 
@@ -408,20 +470,9 @@ class CrazyRacingSoundManager {
             MusicMode
     ): void {
         if (
-            this.previewTimer !==
-            null
-        ) {
-            window.clearTimeout(
-                this.previewTimer
-            );
-
-            this.previewTimer =
-                null;
-        }
-
-        if (
             mode ===
-            this.musicMode
+            this.musicMode &&
+            this.activeMusic
         ) {
             return;
         }
@@ -429,126 +480,187 @@ class CrazyRacingSoundManager {
         this.musicMode =
             mode;
 
-        this.crossfadeMusic(
-            mode
-        );
-    }
-
-    previewAlternateMusic():
-        void {
-        const originalMode =
-            this.musicMode;
-
-        const previewMode:
-            MusicMode =
-            originalMode ===
-                "race"
-                ? "ambience"
-                : "race";
-
-        this.crossfadeMusic(
-            previewMode
-        );
-
         if (
-            this.previewTimer !==
-            null
+            mode ===
+            "none"
         ) {
-            window.clearTimeout(
-                this.previewTimer
-            );
+            this.stopMusic();
+            return;
         }
 
-        this.previewTimer =
-            window.setTimeout(
-                () => {
-                    this.crossfadeMusic(
-                        originalMode
-                    );
-
-                    this.previewTimer =
-                        null;
-                },
-                MUSIC_PREVIEW_DURATION_MS
-            );
+        this.crossfadeToCurrentTrack();
     }
 
-    private createMusicElement(
-        path:
-            string
-    ): HTMLAudioElement {
-        const audio =
-            new Audio(path);
+    cycleMusic(): void {
+        const category:
+            MusicCategory =
+            this.musicMode ===
+                "race"
+                ? "race"
+                : "ambience";
 
-        audio.loop = true;
-        audio.preload =
-            "auto";
-        audio.volume = 0;
+        const tracks =
+            MUSIC_PLAYLISTS[
+            category
+            ];
 
-        return audio;
-    }
-
-    private crossfadeMusic(
-        targetMode:
-            MusicMode
-    ): void {
         if (
-            this.fadeTimer !==
-            null
+            tracks.length === 0
         ) {
-            window.clearInterval(
-                this.fadeTimer
+            return;
+        }
+
+        this.musicIndexes[
+            category
+        ] =
+            (
+                this.musicIndexes[
+                category
+                ] +
+                1
+            ) %
+            tracks.length;
+
+        if (
+            this.musicMode ===
+            category
+        ) {
+            this.crossfadeToCurrentTrack();
+        } else {
+            void this.playEffect(
+                "ui-select",
+                {
+                    volume: 0.55
+                }
+            );
+        }
+    }
+
+    private getCurrentMusicPath():
+        string | null {
+        if (
+            this.musicMode ===
+            "none"
+        ) {
+            return null;
+        }
+
+        const tracks =
+            MUSIC_PLAYLISTS[
+            this.musicMode
+            ];
+
+        return (
+            tracks[
+            this.musicIndexes[
+            this.musicMode
+            ]
+            ] ??
+            tracks[0] ??
+            null
+        );
+    }
+
+    private crossfadeToCurrentTrack():
+        void {
+        const path =
+            this.getCurrentMusicPath();
+
+        if (!path) {
+            this.stopMusic();
+            return;
+        }
+
+        /*
+         * Cancel and clean up every unfinished previous
+         * transition before creating another track.
+         */
+        this.cancelFade();
+
+        if (
+            this.fadingOutMusic
+        ) {
+            this.stopAudioElement(
+                this.fadingOutMusic
             );
 
-            this.fadeTimer =
+            this.fadingOutMusic =
                 null;
         }
 
-        const ambience =
-            this.musicElements
-                .ambience;
+        const outgoing =
+            this.activeMusic;
 
-        const race =
-            this.musicElements
-                .race;
+        const incoming =
+            this.createMusicElement(
+                path
+            );
 
-        const targetAmbience =
-            targetMode ===
-                "ambience" &&
-                !this.settings.muted
-                ? this.settings
-                    .musicVolume
-                : 0;
+        this.fadingOutMusic =
+            outgoing;
 
-        const targetRace =
-            targetMode ===
-                "race" &&
-                !this.settings.muted
-                ? this.settings
-                    .musicVolume
-                : 0;
+        this.activeMusic =
+            incoming;
 
         if (
-            targetAmbience > 0
+            !this.settings.muted
         ) {
             void this.safePlay(
-                ambience
+                incoming
             );
         }
 
+        this.crossfade(
+            outgoing,
+            incoming
+        );
+    }
+
+    private stopMusic(): void {
+        this.cancelFade();
+
         if (
-            targetRace > 0
+            this.activeMusic
         ) {
-            void this.safePlay(
-                race
+            this.stopAudioElement(
+                this.activeMusic
             );
+
+            this.activeMusic =
+                null;
         }
 
-        const ambienceStart =
-            ambience.volume;
+        if (
+            this.fadingOutMusic
+        ) {
+            this.stopAudioElement(
+                this.fadingOutMusic
+            );
 
-        const raceStart =
-            race.volume;
+            this.fadingOutMusic =
+                null;
+        }
+    }
+
+    private crossfade(
+        outgoing:
+            HTMLAudioElement | null,
+
+        incoming:
+            HTMLAudioElement
+    ): void {
+        const outgoingStart =
+            outgoing?.volume ??
+            0;
+
+        const targetIncoming =
+            this.settings.muted
+                ? 0
+                : this.settings
+                    .musicVolume;
+
+        incoming.volume =
+            0;
 
         const startedAt =
             performance.now();
@@ -575,17 +687,32 @@ class CrazyRacingSoundManager {
                             progress
                         );
 
-                    ambience.volume =
-                        interpolate(
-                            ambienceStart,
-                            targetAmbience,
-                            eased
-                        );
+                    if (
+                        outgoing
+                    ) {
+                        outgoing.volume =
+                            interpolate(
+                                outgoingStart,
+                                0,
+                                eased
+                            );
+                    }
 
-                    race.volume =
+                    /*
+                     * Read the current setting on every
+                     * tick instead of capturing an old
+                     * target volume.
+                     */
+                    const currentTarget =
+                        this.settings.muted
+                            ? 0
+                            : this.settings
+                                .musicVolume;
+
+                    incoming.volume =
                         interpolate(
-                            raceStart,
-                            targetRace,
+                            0,
+                            currentTarget,
                             eased
                         );
 
@@ -596,30 +723,22 @@ class CrazyRacingSoundManager {
                     }
 
                     if (
-                        targetAmbience ===
-                        0
+                        outgoing
                     ) {
-                        ambience.pause();
-                    }
-
-                    if (
-                        targetRace ===
-                        0
-                    ) {
-                        race.pause();
-                    }
-
-                    if (
-                        this.fadeTimer !==
-                        null
-                    ) {
-                        window.clearInterval(
-                            this.fadeTimer
+                        this.stopAudioElement(
+                            outgoing
                         );
+                    }
 
-                        this.fadeTimer =
+                    if (
+                        this.fadingOutMusic ===
+                        outgoing
+                    ) {
+                        this.fadingOutMusic =
                             null;
                     }
+
+                    this.cancelFade();
                 },
                 FADE_INTERVAL_MS
             );
@@ -627,9 +746,102 @@ class CrazyRacingSoundManager {
 
     private applyCurrentMusicVolume():
         void {
-        this.crossfadeMusic(
-            this.musicMode
+        const targetVolume =
+            this.settings.muted
+                ? 0
+                : this.settings
+                    .musicVolume;
+
+        if (
+            this.activeMusic
+        ) {
+            this.activeMusic.volume =
+                targetVolume;
+
+            if (
+                !this.settings.muted &&
+                this.musicMode !==
+                "none"
+            ) {
+                void this.safePlay(
+                    this.activeMusic
+                );
+            }
+        }
+
+        /*
+         * A track that was fading out must never keep
+         * playing after a direct volume adjustment.
+         */
+        if (
+            this.fadingOutMusic
+        ) {
+            this.stopAudioElement(
+                this.fadingOutMusic
+            );
+
+            this.fadingOutMusic =
+                null;
+        }
+    }
+
+    private createMusicElement(
+        path:
+            string
+    ): HTMLAudioElement {
+        const audio =
+            new Audio(path);
+
+        audio.loop =
+            true;
+
+        audio.preload =
+            "auto";
+
+        audio.volume =
+            0;
+
+        return audio;
+    }
+
+    private stopAudioElement(
+        audio:
+            HTMLAudioElement
+    ): void {
+        audio.pause();
+
+        try {
+            audio.currentTime =
+                0;
+        } catch {
+            // The metadata may not yet be loaded.
+        }
+
+        /*
+         * Clearing src ensures that an obsolete media
+         * element cannot restart or continue buffering.
+         */
+        audio.removeAttribute(
+            "src"
         );
+
+        audio.load();
+    }
+
+    private cancelFade(): void {
+        if (
+            this.fadeTimer ===
+            null
+        ) {
+            return;
+        }
+
+        window.clearInterval(
+            this.fadeTimer
+        );
+
+        this.fadeTimer =
+            null;
     }
 
     private notifyListeners():
@@ -651,14 +863,16 @@ class CrazyRacingSoundManager {
         try {
             await audio.play();
         } catch {
-            // Waiting for user interaction.
+            // Playback resumes after user interaction.
         }
     }
 
     private installUnlockListeners():
         void {
         const unlock = () => {
-            if (this.unlocked) {
+            if (
+                this.unlocked
+            ) {
                 return;
             }
 
@@ -666,11 +880,13 @@ class CrazyRacingSoundManager {
                 true;
 
             if (
+                this.activeMusic &&
                 this.musicMode !==
-                "none"
+                "none" &&
+                !this.settings.muted
             ) {
-                this.crossfadeMusic(
-                    this.musicMode
+                void this.safePlay(
+                    this.activeMusic
                 );
             }
 

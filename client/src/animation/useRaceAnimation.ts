@@ -415,7 +415,7 @@ export function useRaceAnimation({
                             .toPosition -
                         step.trigger
                             .fromPosition
-                    ) > 1
+                    ) > 0
                 ) {
                     await playMovementBySpace(
                         step.trigger,
@@ -530,18 +530,22 @@ export function useRaceAnimation({
                     nextRacers
                 );
 
+                playEffect(
+                    movement.crawling
+                        ? "crawl"
+                        : "movement-step",
+                    {
+                        volume:
+                            movement.crawling
+                                ? 0.72
+                                : 0.42,
+
+                        playbackRate: 1
+                    }
+                );
+
                 await wait(
                     MOVE_ONE_SPACE_DURATION_MS
-                );
-                playEffect(
-                    "movement-step",
-                    {
-                        volume: 0.42,
-                        playbackRate:
-                            movement.crawling
-                                ? 0.75
-                                : 1
-                    }
                 );
             }
         }

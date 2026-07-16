@@ -19,10 +19,8 @@ type AudioMenuButtonProps = {
 export function AudioMenuButton({
     placement = "header"
 }: AudioMenuButtonProps) {
-    const [
-        open,
-        setOpen
-    ] = useState(false);
+    const [open, setOpen] =
+        useState(false);
 
     const containerRef =
         useRef<HTMLDivElement | null>(
@@ -35,14 +33,13 @@ export function AudioMenuButton({
         setEffectsVolume,
         setMusicVolume,
         testSounds,
-        previewAlternateMusic,
+        cycleMusic,
         resetAudio
     } = useSound();
 
     useEffect(() => {
         function handlePointerDown(
-            event:
-                PointerEvent
+            event: PointerEvent
         ) {
             if (
                 !containerRef.current ||
@@ -87,9 +84,7 @@ export function AudioMenuButton({
                         ? "Open audio settings. Audio is muted."
                         : "Open audio settings."
                 }
-                aria-expanded={
-                    open
-                }
+                aria-expanded={open}
                 onClick={() =>
                     setOpen(
                         (current) =>
@@ -159,9 +154,7 @@ export function AudioMenuButton({
                     <div className="audioMenuActions">
                         <button
                             type="button"
-                            onClick={
-                                testSounds
-                            }
+                            onClick={testSounds}
                             disabled={
                                 settings.muted
                             }
@@ -171,9 +164,7 @@ export function AudioMenuButton({
 
                         <button
                             type="button"
-                            onClick={
-                                previewAlternateMusic
-                            }
+                            onClick={cycleMusic}
                             disabled={
                                 settings.muted
                             }
@@ -183,9 +174,7 @@ export function AudioMenuButton({
 
                         <button
                             type="button"
-                            onClick={
-                                resetAudio
-                            }
+                            onClick={resetAudio}
                         >
                             Reset audio
                         </button>
@@ -202,19 +191,11 @@ function AudioSlider({
     disabled,
     onChange
 }: {
-    label:
-    string;
-
-    value:
-    number;
-
-    disabled:
-    boolean;
-
-    onChange:
-    (
-        value:
-            number
+    label: string;
+    value: number;
+    disabled: boolean;
+    onChange: (
+        value: number
     ) => void;
 }) {
     return (
@@ -232,33 +213,37 @@ function AudioSlider({
                 </strong>
             </div>
 
-            <div className="audioSliderTrack">
+            <input
+                className="audioSliderInput"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={
+                    Math.round(
+                        value * 100
+                    )
+                }
+                disabled={
+                    disabled
+                }
+                onChange={(
+                    event
+                ) => {
+                    onChange(
+                        Number(
+                            event.target
+                                .value
+                        ) /
+                        100
+                    );
+                }}
+            />
+
+            <div className="audioSliderEndpoints">
                 <span>
                     0%
                 </span>
-
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={
-                        value
-                    }
-                    disabled={
-                        disabled
-                    }
-                    onChange={(
-                        event
-                    ) =>
-                        onChange(
-                            Number(
-                                event.target
-                                    .value
-                            )
-                        )
-                    }
-                />
 
                 <span>
                     100%
@@ -269,8 +254,7 @@ function AudioSlider({
 }
 
 function capitalize(
-    value:
-        string
+    value: string
 ): string {
     return (
         value.charAt(0)

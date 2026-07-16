@@ -67,6 +67,7 @@ export function moveRacer(
         );
 
     let actualSteps = 0;
+    let collisionOccurred = false;
 
     for (
         let step = 0;
@@ -131,6 +132,15 @@ export function moveRacer(
                 true
             );
 
+            if (
+                collisionOccurred
+            ) {
+                recordRaceState(
+                    room,
+                    "COLLISION"
+                );
+            }
+
             finishRacer(
                 room,
                 racer
@@ -142,10 +152,12 @@ export function moveRacer(
         if (
             options.canCollide
         ) {
-            resolveCollisions(
-                room,
-                racer
-            );
+            collisionOccurred =
+                resolveCollisions(
+                    room,
+                    racer
+                ) ||
+                collisionOccurred;
         }
 
         if (
@@ -156,6 +168,11 @@ export function moveRacer(
         }
     }
 
+    /*
+ * First record the completed movement and its snapshot.
+ * The client can now animate from startingPosition to
+ * racer.position without seeing the destination early.
+ */
     recordMovement(
         room,
         racer,
@@ -167,6 +184,19 @@ export function moveRacer(
         options,
         true
     );
+
+    /*
+     * Apply the collision visual state only after the
+     * movement animation snapshot.
+     */
+    if (
+        collisionOccurred
+    ) {
+        recordRaceState(
+            room,
+            "COLLISION"
+        );
+    }
 }
 
 /**

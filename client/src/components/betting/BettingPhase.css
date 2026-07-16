@@ -2,6 +2,8 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    width: 100%;
+    min-width: 0;
 }
 
 .draftStatus {
@@ -9,9 +11,9 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
     border: 1px solid #334155;
     border-radius: 12px;
+    padding: 12px 16px;
     background: #0f172a;
 }
 
@@ -24,20 +26,265 @@
     }
 
 .currentSideBetQuestion {
-    padding: 14px;
-    border-radius: 12px;
-    background: #0f172a;
     border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 14px;
+    background: #0f172a;
 }
 
 .availableTicketSection {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    min-width: 0;
 }
 
+    .availableTicketSection > h3 {
+        margin: 0 0 4px;
+    }
+
+/*
+ * Six available tickets are displayed as:
+ *
+ * Ticket 1 | Ticket 2 | Ticket 3
+ * Ticket 4 | Ticket 5 | Ticket 6
+ *
+ * If fewer tickets remain, only the available tickets
+ * are rendered and the unused cells remain absent.
+ */
 .availableTicketGrid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+    align-items: stretch;
+    gap: 18px;
+    width: 100%;
+    min-width: 0;
+}
+
+    /*
+ * The original ticket has a fixed width of 320px.
+ * Inside this grid, the column must control its width.
+ */
+    .availableTicketGrid >
+    .betTicket {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        box-sizing: border-box;
+        margin: 0;
+    }
+
+    /*
+ * Ensure the header content can contract instead of
+ * pushing the ticket outside its grid cell.
+ */
+    .availableTicketGrid
+    .betTicketHeader {
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .availableTicketGrid
+    .mascotBetTicketHeader {
+        grid-template-columns: minmax(0, 1fr) minmax(64px, 82px) minmax(0, 1fr);
+        gap: 6px;
+        min-height: 96px;
+        padding: 10px 12px;
+    }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader span,
+        .availableTicketGrid
+        .mascotBetTicketHeader strong {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader span {
+            font-size: 12px;
+        }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader strong {
+            font-size: 11px;
+        }
+
+    .availableTicketGrid
+    .betTicketMascotImage {
+        width: 76px;
+        height: 76px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+
+    /*
+ * Side-bet headers are allowed to wrap instead of
+ * extending beyond the ticket width.
+ */
+    .availableTicketGrid
+    .sideBetTicket
+    .betTicketHeader {
+        align-items: flex-start;
+        min-height: 58px;
+    }
+
+        .availableTicketGrid
+        .sideBetTicket
+        .betTicketHeader span,
+        .availableTicketGrid
+        .sideBetTicket
+        .betTicketHeader strong {
+            min-width: 0;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+    .availableTicketGrid
+    .sideBetQuestion {
+        min-height: 68px;
+        padding: 12px;
+        box-sizing: border-box;
+        font-size: 13px;
+    }
+
+    /*
+ * Safe and Risky remain side by side, but both columns
+ * may shrink properly with the parent ticket.
+ */
+    .availableTicketGrid
+    .ticketSides {
+        grid-template-columns: repeat( 2, minmax(0, 1fr) );
+        gap: 8px;
+        padding: 9px;
+        box-sizing: border-box;
+    }
+
+    .availableTicketGrid
+    .ticketSide {
+        min-width: 0;
+        min-height: 124px;
+        gap: 8px;
+        padding: 9px;
+        box-sizing: border-box;
+    }
+
+    .availableTicketGrid
+    .ticketSideLabel {
+        font-size: 11px;
+    }
+
+    .availableTicketGrid
+    .payoutTable div,
+    .availableTicketGrid
+    .sidePayoutTable div {
+        min-width: 0;
+        gap: 5px;
+        padding: 6px 7px;
+        box-sizing: border-box;
+    }
+
+    .availableTicketGrid
+    .payoutTable span,
+    .availableTicketGrid
+    .sidePayoutTable span {
+        min-width: 0;
+        font-size: 11px;
+        overflow-wrap: anywhere;
+    }
+
+    .availableTicketGrid
+    .payoutTable strong,
+    .availableTicketGrid
+    .sidePayoutTable strong {
+        flex-shrink: 0;
+        font-size: 12px;
+    }
+
+/*
+ * At narrower desktop widths, reduce spacing and internal
+ * artwork while preserving the requested three columns.
+ */
+@media ( max-width: 1250px ) {
+    .availableTicketGrid {
+        gap: 12px;
+    }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader {
+            grid-template-columns: minmax(0, 1fr) 62px minmax(0, 1fr);
+            min-height: 82px;
+            padding: 8px 9px;
+        }
+
+        .availableTicketGrid
+        .betTicketMascotImage {
+            width: 60px;
+            height: 60px;
+        }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader span,
+        .availableTicketGrid
+        .mascotBetTicketHeader strong {
+            font-size: 10px;
+        }
+
+        .availableTicketGrid
+        .ticketSides {
+            gap: 6px;
+            padding: 7px;
+        }
+
+        .availableTicketGrid
+        .ticketSide {
+            min-height: 116px;
+            padding: 7px;
+        }
+}
+
+/*
+ * On tablet-sized layouts, three columns would make
+ * each ticket unreadable. Use two columns while still
+ * keeping a multi-row ticket grid.
+ */
+@media ( max-width: 900px ) {
+    .availableTicketGrid {
+        grid-template-columns: repeat( 2, minmax(0, 1fr) );
+    }
+}
+
+/*
+ * Small mobile screens display one complete ticket
+ * per row rather than allowing overlap.
+ */
+@media ( max-width: 580px ) {
+    .draftStatus {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .availableTicketGrid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader {
+            grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr);
+            min-height: 96px;
+        }
+
+        .availableTicketGrid
+        .betTicketMascotImage {
+            width: 76px;
+            height: 76px;
+        }
+
+        .availableTicketGrid
+        .mascotBetTicketHeader span,
+        .availableTicketGrid
+        .mascotBetTicketHeader strong {
+            font-size: 12px;
+        }
 }

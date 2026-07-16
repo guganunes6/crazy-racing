@@ -116,7 +116,7 @@ function App() {
         setImportedReplay
     ] = useState<CompletedRaceReplay | null>(
         null
-        );
+    );
 
     const [
         isCountdownActive,
@@ -420,9 +420,33 @@ function App() {
     }
 
     function toggleReady() {
-        if (!room) {
+        if (
+            !room ||
+            !me
+        ) {
             return;
         }
+
+        /*
+         * me.ready describes the state before the click.
+         *
+         * false -> Ready:
+         * use the normal positive confirmation sound.
+         *
+         * true -> Unready:
+         * use the deeper negative confirmation sound.
+         */
+        playEffect(
+            me.ready
+                ? "ui-unready"
+                : "ui-confirm",
+            {
+                volume:
+                    me.ready
+                        ? 0.78
+                        : 0.7
+            }
+        );
 
         socket.emit(
             "player:ready",
@@ -906,11 +930,11 @@ function App() {
                     CRAZY RACING
                 </h1>
 
-                <AudioMenuButton
-                    placement="header"
-                />
-
                 <div className="roomInformation">
+                    <AudioMenuButton
+                        placement="header"
+                    />
+
                     <span>
                         Room:{" "}
                         <strong>
@@ -977,11 +1001,6 @@ function App() {
                                             {
                                                 player.name
                                             }
-
-                                            {player.id ===
-                                                socket.id
-                                                ? " (you)"
-                                                : ""}
                                         </span>
 
                                         <span className="playerMoney">
@@ -1156,11 +1175,18 @@ function App() {
                                                             selectedDoubledTicketId ===
                                                             ticket.id
                                                         }
-                                                        onSelect={() =>
+                                                        onSelect={() => {
+                                                            playEffect(
+                                                                "bet-draft",
+                                                                {
+                                                                    volume: 0.55
+                                                                }
+                                                            );
+
                                                             setSelectedDoubledTicketId(
                                                                 ticket.id
-                                                            )
-                                                        }
+                                                            );
+                                                        }}
                                                     />
                                                 )
                                             )}

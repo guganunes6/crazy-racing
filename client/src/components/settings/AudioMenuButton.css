@@ -1,6 +1,7 @@
 .audioMenuContainer {
     position: relative;
     z-index: 120;
+    flex: 0 0 auto;
 }
 
 .audioMenuContainerInitial {
@@ -85,42 +86,56 @@
     display: flex;
     flex-direction: column;
     gap: 7px;
+    width: 100%;
+    min-width: 0;
 }
 
 .audioSliderHeader {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 10px;
     color: #cbd5e1;
     font-size: 11px;
 }
 
-.audioSliderTrack {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) 36px;
-    align-items: center;
-    gap: 7px;
+    .audioSliderHeader strong {
+        min-width: 42px;
+        text-align: right;
+    }
+
+.audioSliderInput {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    accent-color: #facc15;
 }
 
-    .audioSliderTrack span {
-        color: #94a3b8;
-        font-size: 9px;
-        font-weight: 800;
+    .audioSliderInput:disabled {
+        opacity: 0.4;
     }
 
-        .audioSliderTrack span:last-child {
-            text-align: right;
-        }
+.audioSliderEndpoints {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+}
 
-    .audioSliderTrack input {
-        width: 100%;
-        margin: 0;
-        accent-color: #facc15;
+    .audioSliderEndpoints span:first-child {
+        text-align: left;
     }
 
-        .audioSliderTrack input:disabled {
-            opacity: 0.4;
-        }
+    .audioSliderEndpoints span:last-child {
+        text-align: right;
+    }
 
 .audioMenuActions {
     display: grid;
@@ -138,7 +153,7 @@
         line-height: 1.15;
     }
 
-        .audioMenuActions button:hover:not( :disabled ) {
+        .audioMenuActions button:hover:not(:disabled) {
             background: #475569;
         }
 

@@ -1,24 +1,39 @@
 import type {
     RacerState
 } from "@crazy-racing/shared";
-import type { Room } from "../gameLogic.js";
+
+import type {
+    Room
+} from "../gameLogic.js";
+
 import {
     disqualifyRacersTogether
 } from "./Podium.js";
+
 import {
-    recordRaceEvent,
-    recordRaceState
+    recordRaceEvent
 } from "./RaceEvents.js";
 
+/**
+ * Resolves every collision caused by the moving mascot.
+ *
+ * Returns true when at least one collision occurred.
+ *
+ * This function deliberately does not record a RACE_STATE.
+ * Movement.ts records the movement snapshot first and the
+ * collision snapshot afterwards. This prevents the client
+ * from seeing the moving mascot at its destination before
+ * its step-by-step movement animation begins.
+ */
 export function resolveCollisions(
     room: Room,
     movingRacer: RacerState
-): void {
+): boolean {
     if (
         movingRacer.finished ||
         movingRacer.dq
     ) {
-        return;
+        return false;
     }
 
     const affectedRacers =
@@ -34,6 +49,12 @@ export function resolveCollisions(
                 movingRacer.position
         );
 
+    if (
+        affectedRacers.length === 0
+    ) {
+        return false;
+    }
+
     const knockedOutRacers: Array<{
         racer: RacerState;
         reason: string;
@@ -46,36 +67,53 @@ export function resolveCollisions(
     ) {
         recordRaceEvent(room, {
             type: "COLLISION",
+
             movingRacer:
                 movingRacer.name,
+
             affectedRacer:
                 affectedRacer.name,
+
             lane:
                 movingRacer.lane,
+
             position:
                 movingRacer.position,
+
             affectedRacerWasFallen:
                 affectedRacer.fallen
         });
 
-        if (affectedRacer.fallen) {
+        if (
+            affectedRacer.fallen
+        ) {
             knockedOutRacers.push({
-                racer: affectedRacer,
+                racer:
+                    affectedRacer,
+
                 reason:
                     `collided with ${movingRacer.name} while already fallen`,
-                reasonCode: "knockout"
+
+                reasonCode:
+                    "knockout"
             });
 
             continue;
         }
 
-        affectedRacer.fallen = true;
+        affectedRacer.fallen =
+            true;
 
         recordRaceEvent(room, {
-            type: "RACER_FELL",
+            type:
+                "RACER_FELL",
+
             racer:
                 affectedRacer.name,
-            cause: "COLLISION",
+
+            cause:
+                "COLLISION",
+
             causedBy:
                 movingRacer.name
         });
@@ -86,10 +124,5 @@ export function resolveCollisions(
         knockedOutRacers
     );
 
-    if (affectedRacers.length > 0) {
-        recordRaceState(
-            room,
-            "COLLISION"
-        );
-    }
+    return true;
 }

@@ -14,12 +14,10 @@ import {
 } from "./SoundManager";
 
 type SoundContextValue = {
-    settings:
-    SoundSettings;
+    settings: SoundSettings;
 
     playEffect: (
-        name:
-            SoundEffectName,
+        name: SoundEffectName,
         options?: {
             volume?: number;
             playbackRate?: number;
@@ -27,38 +25,33 @@ type SoundContextValue = {
     ) => void;
 
     setMusicMode: (
-        mode:
-            MusicMode
+        mode: MusicMode
     ) => void;
 
     setMuted: (
-        muted:
-            boolean
+        muted: boolean
     ) => void;
 
     setEffectsVolume: (
-        volume:
-            number
+        volume: number
     ) => void;
 
     setMusicVolume: (
-        volume:
-            number
+        volume: number
     ) => void;
 
     testSounds: () => void;
-    previewAlternateMusic: () => void;
+    cycleMusic: () => void;
     resetAudio: () => void;
 };
 
 export const SoundContext =
-    createContext<
-        SoundContextValue | null
-    >(null);
+    createContext<SoundContextValue | null>(
+        null
+    );
 
 type SoundProviderProps = {
-    children:
-    ReactNode;
+    children: ReactNode;
 };
 
 export function SoundProvider({
@@ -78,17 +71,12 @@ export function SoundProvider({
     }, []);
 
     const value =
-        useMemo<
-            SoundContextValue
-        >(
+        useMemo<SoundContextValue>(
             () => ({
                 settings,
 
                 playEffect:
-                    (
-                        name,
-                        options
-                    ) => {
+                    (name, options) => {
                         void soundManager
                             .playEffect(
                                 name,
@@ -99,9 +87,7 @@ export function SoundProvider({
                 setMusicMode:
                     (mode) => {
                         soundManager
-                            .setMusicMode(
-                                mode
-                            );
+                            .setMusicMode(mode);
                     },
 
                 setMuted:
@@ -135,11 +121,10 @@ export function SoundProvider({
                         .testSounds();
                 },
 
-                previewAlternateMusic:
-                    () => {
-                        soundManager
-                            .previewAlternateMusic();
-                    },
+                cycleMusic: () => {
+                    soundManager
+                        .cycleMusic();
+                },
 
                 resetAudio: () => {
                     soundManager
