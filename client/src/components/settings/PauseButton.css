@@ -1,0 +1,26 @@
+.pauseButton {
+    position: relative;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    padding: 0;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 17px;
+    font-weight: 1000;
+    line-height: 1;
+}
+
+    .pauseButton:hover {
+        border-color: #facc15;
+    }
+
+.pauseButtonActive {
+    border-color: #facc15;
+    background: #713f12;
+}

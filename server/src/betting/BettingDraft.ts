@@ -169,24 +169,119 @@ function advanceDraft(room: Room): void {
     room.bettingDraft.turnIndex += 1;
 
     if (
-        room.bettingDraft.turnIndex >=
+        room.bettingDraft.turnIndex <
         room.bettingDraft.order.length
     ) {
-        room.bettingDraft.completed = true;
-        room.bettingDraft.currentPlayerId = null;
-
-        room.phase =
-            room.raceNumber === 3
-                ? "double-bet"
-                : "secret-card";
+        room.bettingDraft.currentPlayerId =
+            room.bettingDraft.order[
+            room.bettingDraft.turnIndex
+            ];
 
         return;
     }
 
-    room.bettingDraft.currentPlayerId =
-        room.bettingDraft.order[
-        room.bettingDraft.turnIndex
-        ];
+    /*
+     * A player may have missed one or more selections because they were
+     * disconnected while the original snake draft continued.
+     *
+     * Before leaving the betting phase, calculate every player's deficit.
+     * When at least one player is short, begin a supplemental snake draft
+     * containing only the players who still need tickets. Supplemental
+     * rounds continue until everyone owns picksPerPlayer tickets.
+     */
+    const supplementalOrder =
+        createSupplementalSnakeOrder(room);
+
+    if (supplementalOrder.length > 0) {
+        room.bettingDraft.order =
+            supplementalOrder;
+
+        room.bettingDraft.turnIndex = 0;
+
+        room.bettingDraft.currentPlayerId =
+            supplementalOrder[0] ?? null;
+
+        room.bettingDraft.completed = false;
+
+        return;
+    }
+
+    room.bettingDraft.completed = true;
+    room.bettingDraft.currentPlayerId = null;
+
+    room.phase =
+        room.raceNumber === 3
+            ? "double-bet"
+            : "secret-card";
+}
+
+function createSupplementalSnakeOrder(
+    room: Room
+): string[] {
+    const target =
+        room.bettingDraft.picksPerPlayer;
+
+    const rotatedPlayers = rotateArray(
+        room.players,
+        room.bettingDraft.startingPlayerIndex
+    );
+
+    const missingByPlayerId =
+        new Map<string, number>();
+
+    for (const player of rotatedPlayers) {
+        const missing = Math.max(
+            0,
+            target -
+            player.draftedTickets.length
+        );
+
+        if (missing > 0) {
+            missingByPlayerId.set(
+                player.id,
+                missing
+            );
+        }
+    }
+
+    if (missingByPlayerId.size === 0) {
+        return [];
+    }
+
+    const maxMissing = Math.max(
+        ...missingByPlayerId.values()
+    );
+
+    const order: string[] = [];
+
+    for (
+        let round = 0;
+        round < maxMissing;
+        round += 1
+    ) {
+        const playersNeedingThisRound =
+            rotatedPlayers.filter(
+                (player) =>
+                    (missingByPlayerId.get(
+                        player.id
+                    ) ?? 0) >
+                    round
+            );
+
+        const roundOrder =
+            round % 2 === 0
+                ? playersNeedingThisRound
+                : [...playersNeedingThisRound]
+                    .reverse();
+
+        order.push(
+            ...roundOrder.map(
+                (player) => player.id
+            )
+        );
+    }
+
+    return order;
 }
 
 function rotateArray<T>(

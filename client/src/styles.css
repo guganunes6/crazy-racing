@@ -711,3 +711,214 @@ input {
         justify-content: flex-start;
     }
 }
+
+/* Milestone 5: pause, reconnection and lobby moderation */
+
+.topbar {
+    position: relative;
+    z-index: 950;
+}
+
+.topbarRoomControls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+    .topbarRoomControls .roomInformation {
+        margin-left: 0;
+    }
+
+.reconnectingOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: grid;
+    place-items: center;
+    background: rgba(2, 6, 23, 0.88);
+    backdrop-filter: blur(8px);
+}
+
+    .reconnectingOverlay section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #475569;
+        border-radius: 18px;
+        padding: 24px 30px;
+        background: #0f172a;
+        color: #f8fafc;
+        text-align: center;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.58);
+    }
+
+    .reconnectingOverlay strong {
+        color: #facc15;
+        font-size: 25px;
+    }
+
+    .reconnectingOverlay span {
+        color: #cbd5e1;
+    }
+
+.player {
+    position: relative;
+}
+
+.playerDisconnected {
+    color: #fca5a5;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.lobbyKickButton {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    min-height: 0;
+    margin: 0;
+    border: 1px solid #f87171;
+    border-radius: 7px;
+    padding: 0;
+    background: #991b1b;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 1000;
+    line-height: 1;
+}
+
+    .lobbyKickButton:hover {
+        background: #dc2626;
+    }
+
+@media (max-width: 700px) {
+    .topbarRoomControls {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+}
+
+/* Lobby host moderation control outside each player card. */
+.playerRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+}
+
+    .playerRow > .player {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+.lobbyKickButtonOutside {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    flex: 0 0 30px;
+    margin: 0;
+    border: 1px solid #f87171;
+    border-radius: 50%;
+    padding: 0;
+    background: #991b1b;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+    .lobbyKickButtonOutside:hover:not(:disabled) {
+        background: #dc2626;
+        transform: scale(1.08);
+    }
+
+    .lobbyKickButtonOutside:active:not(:disabled) {
+        transform: scale(0.94);
+    }
+
+/* Leave-room control in the top-right header controls. */
+.leaveRoomButton {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    margin: 0;
+    border: 1px solid #64748b;
+    border-radius: 10px;
+    padding: 0;
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+    .leaveRoomButton svg {
+        width: 19px;
+        height: 19px;
+    }
+
+    .leaveRoomButton:hover:not(:disabled) {
+        border-color: #f87171;
+        background: #7f1d1d;
+        color: #ffffff;
+    }
+
+    .leaveRoomButton:active:not(:disabled) {
+        transform: scale(0.95);
+    }
+
+/* Deterministic initial-screen reconnection state. */
+.initialReconnectStatus {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #0f172a;
+    text-align: center;
+}
+
+    .initialReconnectStatus strong {
+        color: #facc15;
+    }
+
+    .initialReconnectStatus span {
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+
+.initialReplayImportDisabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.playerHostCrown {
+    flex: 0 0 auto;
+    color: #facc15;
+    font-size: 15px;
+    line-height: 1;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.playerName {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}

@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useRef,
     useState
@@ -30,6 +31,9 @@ type RaceCountdownProps = {
     raceEvents:
     RaceEvent[];
 
+    paused:
+    boolean;
+
     onActiveChange?:
     (active: boolean) => void;
 };
@@ -50,6 +54,7 @@ const RECENT_EVENT_LIMIT_MS =
 
 export function RaceCountdown({
     raceEvents,
+    paused,
     onActiveChange
 }: RaceCountdownProps) {
     const [
@@ -69,12 +74,160 @@ export function RaceCountdown({
     const lastPlayedSequenceRef =
         useRef(0);
 
-    const timersRef =
-        useRef<number[]>([]);
+    const timerRef =
+        useRef<number | null>(
+            null
+        );
+
+    const timerStartedAtRef =
+        useRef(0);
+
+    const remainingMsRef =
+        useRef(
+            VALUE_DURATION_MS
+        );
+
+    const countdownIndexRef =
+        useRef(0);
+
+    const activeRef =
+        useRef(false);
+
+    const pausedRef =
+        useRef(paused);
 
     const {
         playEffect
     } = useSound();
+
+    const clearTimer =
+        useCallback(() => {
+            if (
+                timerRef.current !==
+                null
+            ) {
+                window.clearTimeout(
+                    timerRef.current
+                );
+
+                timerRef.current =
+                    null;
+            }
+        }, []);
+
+    const finishCountdown =
+        useCallback(() => {
+            clearTimer();
+
+            activeRef.current =
+                false;
+
+            setBurnedEvent(
+                null
+            );
+
+            onActiveChange?.(
+                false
+            );
+        }, [
+            clearTimer,
+            onActiveChange
+        ]);
+
+    const scheduleNextStepRef =
+        useRef<() => void>(
+            () => undefined
+        );
+
+    const advanceCountdown =
+        useCallback(() => {
+            if (
+                !activeRef.current ||
+                pausedRef.current
+            ) {
+                return;
+            }
+
+            const nextIndex =
+                countdownIndexRef.current +
+                1;
+
+            if (
+                nextIndex >=
+                COUNTDOWN_VALUES.length
+            ) {
+                finishCountdown();
+                return;
+            }
+
+            countdownIndexRef.current =
+                nextIndex;
+
+            setCountdownIndex(
+                nextIndex
+            );
+
+            playEffect(
+                nextIndex === 3
+                    ? "countdown-go"
+                    : "countdown-tick",
+                {
+                    volume:
+                        nextIndex === 3
+                            ? 0.95
+                            : 0.7
+                }
+            );
+
+            remainingMsRef.current =
+                VALUE_DURATION_MS;
+
+            scheduleNextStepRef.current();
+        }, [
+            finishCountdown,
+            playEffect
+        ]);
+
+    const scheduleNextStep =
+        useCallback(() => {
+            clearTimer();
+
+            if (
+                !activeRef.current ||
+                pausedRef.current
+            ) {
+                return;
+            }
+
+            const delay =
+                Math.max(
+                    1,
+                    remainingMsRef.current
+                );
+
+            timerStartedAtRef.current =
+                performance.now();
+
+            timerRef.current =
+                window.setTimeout(
+                    () => {
+                        timerRef.current =
+                            null;
+
+                        remainingMsRef.current =
+                            VALUE_DURATION_MS;
+
+                        advanceCountdown();
+                    },
+                    delay
+                );
+        }, [
+            advanceCountdown,
+            clearTimer
+        ]);
+
+    scheduleNextStepRef.current =
+        scheduleNextStep;
 
     useEffect(() => {
         const latestBurnEvent =
@@ -97,8 +250,8 @@ export function RaceCountdown({
         }
 
         /*
-         * Do not play an old countdown when a player
-         * reconnects during an active race.
+         * Do not play an old countdown when a player reconnects
+         * during an already active race.
          */
         if (
             Date.now() -
@@ -111,16 +264,27 @@ export function RaceCountdown({
             return;
         }
 
-        clearTimers();
+        clearTimer();
 
         lastPlayedSequenceRef.current =
             latestBurnEvent.sequence;
+
+        countdownIndexRef.current =
+            0;
+
+        remainingMsRef.current =
+            VALUE_DURATION_MS;
+
+        activeRef.current =
+            true;
 
         setBurnedEvent(
             latestBurnEvent
         );
 
-        setCountdownIndex(0);
+        setCountdownIndex(
+            0
+        );
 
         playEffect(
             "countdown-tick",
@@ -133,88 +297,68 @@ export function RaceCountdown({
             true
         );
 
-        for (
-            let index = 1;
-            index <
-            COUNTDOWN_VALUES.length;
-            index += 1
-        ) {
-            const timer =
-                window.setTimeout(
-                    () => {
-                        playEffect(
-                            index === 3
-                                ? "countdown-go"
-                                : "countdown-tick",
-                            {
-                                volume:
-                                    index === 3
-                                        ? 0.95
-                                        : 0.7
-                            }
-                        );
-                        setCountdownIndex(
-                            index
-                        );
-                    },
-                    VALUE_DURATION_MS *
-                    index
-                );
+        scheduleNextStep();
 
-            timersRef.current.push(
-                timer
-            );
+        return clearTimer;
+    }, [
+        clearTimer,
+        onActiveChange,
+        playEffect,
+        raceEvents,
+        scheduleNextStep
+    ]);
+
+    useEffect(() => {
+        pausedRef.current =
+            paused;
+
+        if (!activeRef.current) {
+            return;
         }
 
-        const closeTimer =
-            window.setTimeout(
-                () => {
-                    setBurnedEvent(
-                        null
+        if (paused) {
+            if (
+                timerRef.current !==
+                null
+            ) {
+                const elapsed =
+                    performance.now() -
+                    timerStartedAtRef.current;
+
+                remainingMsRef.current =
+                    Math.max(
+                        1,
+                        remainingMsRef.current -
+                        elapsed
                     );
+            }
 
-                    onActiveChange?.(
-                        false
-                    );
-                },
-                VALUE_DURATION_MS *
-                COUNTDOWN_VALUES.length
-            );
+            clearTimer();
+            return;
+        }
 
-        timersRef.current.push(
-            closeTimer
-        );
-
-        return clearTimers;
+        scheduleNextStep();
     }, [
-        onActiveChange,
-        raceEvents
+        clearTimer,
+        paused,
+        scheduleNextStep
     ]);
 
     useEffect(() => {
         return () => {
-            clearTimers();
+            clearTimer();
+
+            activeRef.current =
+                false;
 
             onActiveChange?.(
                 false
             );
         };
     }, [
+        clearTimer,
         onActiveChange
     ]);
-
-    function clearTimers() {
-        for (
-            const timer
-            of timersRef.current
-        ) {
-            window.clearTimeout(
-                timer
-            );
-        }
-
-        timersRef.current = [];
-    }
 
     if (!burnedEvent) {
         return null;
@@ -227,7 +371,15 @@ export function RaceCountdown({
 
     return (
         <div
-            className="raceCountdownOverlay"
+            className={[
+                "raceCountdownOverlay",
+
+                paused
+                    ? "raceCountdownPaused"
+                    : ""
+            ]
+                .filter(Boolean)
+                .join(" ")}
             aria-live="assertive"
         >
             <div className="raceCountdownBurnedCards">

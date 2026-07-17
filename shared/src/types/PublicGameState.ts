@@ -8,7 +8,9 @@ import type {
     RacerState,
     RaceCard
 } from "../index";
-import type { SideBetDefinition } from "../cards/SideBets";
+import type {
+    SideBetDefinition
+} from "../cards/SideBets";
 
 export type PublicPlayerState = {
     id: string;
@@ -21,6 +23,24 @@ export type PublicPlayerState = {
     secretCardsSubmitted: boolean;
     raceAgain: boolean;
     connectionState: "connected" | "disconnected";
+};
+
+export type PublicDisconnectedPlayerPause = {
+    playerId: string;
+    playerName: string;
+    disconnectedAt: number;
+    deadline: number;
+    kickVoterIds: string[];
+    waitVoterIds: string[];
+    eligibleVoterCount: number;
+    requiredKickVoteCount: number;
+};
+
+export type PublicPauseState = {
+    isPaused: boolean;
+    manual: boolean;
+    reason: "MANUAL" | "PLAYER_DISCONNECTED" | null;
+    disconnectedPlayers: PublicDisconnectedPlayerPause[];
 };
 
 export type CurrentCardDisplay = {
@@ -36,6 +56,8 @@ export type PublicGameState = {
     phase: string;
     raceNumber: number;
     shortenedBy: number;
+
+    pause: PublicPauseState;
 
     deckRemaining: number;
     publicRaceDeckDefinitionIds: string[];

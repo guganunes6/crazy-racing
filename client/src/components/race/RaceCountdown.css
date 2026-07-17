@@ -182,3 +182,8 @@
         animation-duration: 1ms !important;
     }
 }
+
+.raceCountdownPaused .raceCountdownValue,
+.raceCountdownPaused .raceCountdownCardDiscarding {
+    animation-play-state: paused;
+}
