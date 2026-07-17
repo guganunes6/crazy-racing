@@ -47,7 +47,15 @@ export type GamePhase =
     | "final";
 
 export type Player = {
+    /** Stable browser identity. */
     id: string;
+    sessionId: string;
+
+    /** Current Socket.IO connection. Changes after reconnecting. */
+    socketId: string;
+    connectionState: "connected" | "disconnected";
+    lastSeen: number;
+
     name: string;
     ready: boolean;
     money: number;
@@ -63,6 +71,7 @@ export type Player = {
 
 export type Room = {
     roomCode: string;
+    hostPlayerId: string;
     hostSocketId: string;
     phase: GamePhase;
     raceNumber: number;
@@ -99,10 +108,12 @@ export type Room = {
 
 export function createRoom(
     hostSocketId: string,
+    hostSessionId: string,
     hostName: string
 ): Room {
     return {
         roomCode: nanoid(6).toUpperCase(),
+        hostPlayerId: hostSessionId,
         hostSocketId,
         phase: "lobby",
         raceNumber: 1,
@@ -110,6 +121,7 @@ export function createRoom(
 
         players: [
             createPlayer(
+                hostSessionId,
                 hostSocketId,
                 hostName || "Host"
             )
@@ -149,42 +161,82 @@ export function createRoom(
 export function addPlayer(
     room: Room,
     socketId: string,
+    sessionId: string,
     name: string
-): void {
+): Player {
+    const existingPlayer = room.players.find(
+        (player) => player.sessionId === sessionId
+    );
+
+    if (existingPlayer) {
+        reattachPlayer(room, sessionId, socketId);
+        return existingPlayer;
+    }
+
     if (room.players.length >= MAX_PLAYERS) {
         throw new Error("Room is full.");
     }
 
     if (room.phase !== "lobby") {
-        throw new Error(
-            "The game has already started."
-        );
+        throw new Error("The game has already started.");
     }
 
-    room.players.push(
-        createPlayer(
-            socketId,
-            name ||
-            `Player ${room.players.length + 1}`
-        )
+    const player = createPlayer(
+        sessionId,
+        socketId,
+        name || `Player ${room.players.length + 1}`
     );
+
+    room.players.push(player);
+    return player;
+}
+
+export function reattachPlayer(
+    room: Room,
+    sessionId: string,
+    socketId: string
+): Player | null {
+    const player = room.players.find(
+        (candidate) => candidate.sessionId === sessionId
+    );
+
+    if (!player) return null;
+
+    player.socketId = socketId;
+    player.connectionState = "connected";
+    player.lastSeen = Date.now();
+
+    if (room.hostPlayerId === player.id) {
+        room.hostSocketId = socketId;
+    }
+
+    return player;
+}
+
+export function markPlayerDisconnected(
+    room: Room,
+    socketId: string
+): Player | null {
+    const player = findPlayerBySocketId(room, socketId);
+    if (!player) return null;
+
+    player.connectionState = "disconnected";
+    player.lastSeen = Date.now();
+    return player;
 }
 
 export function removePlayer(
     room: Room,
-    socketId: string
+    playerId: string
 ): void {
     room.players = room.players.filter(
-        (player) =>
-            player.id !== socketId
+        (player) => player.id !== playerId
     );
 
-    if (
-        room.hostSocketId === socketId &&
-        room.players.length > 0
-    ) {
-        room.hostSocketId =
-            room.players[0].id;
+    if (room.hostPlayerId === playerId && room.players.length > 0) {
+        const nextHost = room.players[0];
+        room.hostPlayerId = nextHost.id;
+        room.hostSocketId = nextHost.socketId;
     }
 }
 
@@ -192,13 +244,11 @@ export function toggleReady(
     room: Room,
     socketId: string
 ): void {
-    const player = room.players.find(
-        (candidate) =>
-            candidate.id === socketId
-    );
+    const player = findPlayerBySocketId(room, socketId);
 
     if (player) {
         player.ready = !player.ready;
+        player.lastSeen = Date.now();
     }
 }
 
@@ -265,7 +315,7 @@ export function submitSecretCards(
 
     const player = room.players.find(
         (candidate) =>
-            candidate.id === socketId
+            candidate.socketId === socketId
     );
 
     if (!player) {
@@ -483,7 +533,7 @@ export function selectRaceAgain(
 
     const player = room.players.find(
         (candidate) =>
-            candidate.id === socketId
+            candidate.socketId === socketId
     );
 
     if (!player) {
@@ -500,7 +550,7 @@ export function canRestartGame(
 ): boolean {
     return room.players.some(
         (player) =>
-            player.id !== room.hostSocketId &&
+            player.id !== room.hostPlayerId &&
             player.raceAgain
     );
 }
@@ -523,7 +573,7 @@ export function restartGame(
     const keptPlayers =
         room.players.filter(
             (player) =>
-                player.id === room.hostSocketId ||
+                player.id === room.hostPlayerId ||
                 player.raceAgain
         );
 
@@ -531,11 +581,11 @@ export function restartGame(
         room.players
             .filter(
                 (player) =>
-                    player.id !== room.hostSocketId &&
+                    player.id !== room.hostPlayerId &&
                     !player.raceAgain
             )
             .map(
-                (player) => player.id
+                (player) => player.socketId
             );
 
     room.players = keptPlayers;
@@ -749,12 +799,26 @@ function preparePreRaceDraft(
     );
 }
 
+export function findPlayerBySocketId(
+    room: Room,
+    socketId: string
+): Player | null {
+    return room.players.find(
+        (player) => player.socketId === socketId
+    ) ?? null;
+}
+
 function createPlayer(
-    id: string,
+    sessionId: string,
+    socketId: string,
     name: string
 ): Player {
     return {
-        id,
+        id: sessionId,
+        sessionId,
+        socketId,
+        connectionState: "connected",
+        lastSeen: Date.now(),
         name,
         ready: false,
         money: STARTING_MONEY,

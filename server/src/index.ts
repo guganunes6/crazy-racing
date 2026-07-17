@@ -15,7 +15,8 @@ import {
 import {
     createRoom,
     addPlayer,
-    removePlayer,
+    reattachPlayer,
+    markPlayerDisconnected,
     toggleReady,
     canStart,
     startGame,
@@ -81,6 +82,16 @@ function getErrorMessage(
         : "Unknown error";
 }
 
+function requireSessionId(value: unknown): string {
+    const sessionId = String(value ?? "").trim();
+
+    if (sessionId.length < 8 || sessionId.length > 128) {
+        throw new Error("Invalid player session.");
+    }
+
+    return sessionId;
+}
+
 function publicRoom(
     room: Room
 ) {
@@ -95,6 +106,9 @@ function publicRoom(
     return {
         roomCode:
             room.roomCode,
+
+        hostPlayerId:
+            room.hostPlayerId,
 
         hostSocketId:
             room.hostSocketId,
@@ -177,7 +191,10 @@ function publicRoom(
                             .length > 0,
 
                     raceAgain:
-                        player.raceAgain
+                        player.raceAgain,
+
+                    connectionState:
+                        player.connectionState
                 })
             ),
 
@@ -215,7 +232,7 @@ function emitRoom(
         const player of room.players
     ) {
         io.to(
-            player.id
+            player.socketId
         ).emit(
             "player:private",
             {
@@ -235,13 +252,14 @@ io.on(
         socket.on(
             "room:create",
             (
-                { playerName },
+                { playerName, sessionId },
                 callback
             ) => {
                 try {
                     const room =
                         createRoom(
                             socket.id,
+                            requireSessionId(sessionId),
                             playerName
                         );
 
@@ -278,7 +296,8 @@ io.on(
             (
                 {
                     roomCode,
-                    playerName
+                    playerName,
+                    sessionId
                 },
                 callback
             ) => {
@@ -299,6 +318,7 @@ io.on(
                     addPlayer(
                         room,
                         socket.id,
+                        requireSessionId(sessionId),
                         playerName
                     );
 
@@ -321,6 +341,37 @@ io.on(
                                 error
                             )
                     });
+                }
+            }
+        );
+
+        socket.on(
+            "room:reconnect",
+            ({ roomCode, sessionId }, callback) => {
+                try {
+                    const normalizedRoomCode =
+                        String(roomCode).trim().toUpperCase();
+                    const room = rooms.get(normalizedRoomCode);
+
+                    if (!room) throw new Error("Room not found.");
+
+                    const player = reattachPlayer(
+                        room,
+                        requireSessionId(sessionId),
+                        socket.id
+                    );
+
+                    if (!player) {
+                        throw new Error(
+                            "This browser session is not a member of that room."
+                        );
+                    }
+
+                    socket.join(room.roomCode);
+                    callback({ ok: true, roomCode: room.roomCode });
+                    emitRoom(room);
+                } catch (error) {
+                    callback({ ok: false, error: getErrorMessage(error) });
                 }
             }
         );
@@ -859,36 +910,13 @@ io.on(
         socket.on(
             "disconnect",
             () => {
-                for (
-                    const [
-                        roomCode,
-                        room
-                    ] of rooms
-                ) {
-                    const wasInRoom =
-                        room.players.some(
-                            (player) =>
-                                player.id ===
-                                socket.id
-                        );
-
-                    if (!wasInRoom) {
-                        continue;
-                    }
-
-                    removePlayer(
+                for (const room of rooms.values()) {
+                    const player = markPlayerDisconnected(
                         room,
                         socket.id
                     );
 
-                    if (
-                        room.players.length ===
-                        0
-                    ) {
-                        rooms.delete(
-                            roomCode
-                        );
-                    } else {
+                    if (player) {
                         emitRoom(room);
                     }
                 }

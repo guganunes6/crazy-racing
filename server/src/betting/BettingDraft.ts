@@ -64,9 +64,15 @@ export function confirmTicketDraft(
         throw new Error("The betting draft is not active.");
     }
 
-    if (
-        room.bettingDraft.currentPlayerId !== socketId
-    ) {
+    const player = room.players.find(
+        (candidate) => candidate.socketId === socketId
+    );
+
+    if (!player) {
+        throw new Error("Player not found.");
+    }
+
+    if (room.bettingDraft.currentPlayerId !== player.id) {
         throw new Error("It is not your drafting turn.");
     }
 
@@ -84,14 +90,6 @@ export function confirmTicketDraft(
         room.ticketStacks,
         stack
     );
-
-    const player = room.players.find(
-        (candidate) => candidate.id === socketId
-    );
-
-    if (!player) {
-        throw new Error("Player not found.");
-    }
 
     let draftedTicket: DraftedBetTicket;
 
@@ -133,7 +131,7 @@ export function confirmDoubledTicket(
     }
 
     const player = room.players.find(
-        (candidate) => candidate.id === socketId
+        (candidate) => candidate.socketId === socketId
     );
 
     if (!player) {

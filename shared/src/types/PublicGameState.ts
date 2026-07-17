@@ -19,6 +19,8 @@ export type PublicPlayerState = {
     draftedTickets: DraftedBetTicket[];
     doubledTicketId: string | null;
     secretCardsSubmitted: boolean;
+    raceAgain: boolean;
+    connectionState: "connected" | "disconnected";
 };
 
 export type CurrentCardDisplay = {
@@ -29,6 +31,7 @@ export type CurrentCardDisplay = {
 
 export type PublicGameState = {
     roomCode: string;
+    hostPlayerId: string;
     hostSocketId: string;
     phase: string;
     raceNumber: number;

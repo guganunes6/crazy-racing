@@ -1,4 +1,4 @@
-import React, {
+ï»¿import React, {
     useEffect,
     useMemo,
     useRef,
@@ -45,9 +45,20 @@ import {
 import { AudioMenuButton } from "./components/settings/AudioMenuButton";
 import { SoundControls } from "./components/settings/SoundControls";
 
+import {
+    forgetRoomCode,
+    getLastRoomCode,
+    getSessionId,
+    rememberRoomCode
+} from "./network/session";
+
 import "./styles.css";
 
-const socket = io("http://localhost:3001");
+const sessionId = getSessionId();
+
+const socket = io("http://localhost:3001", {
+    auth: { sessionId }
+});
 
 const racerImages: Record<string, string> = {
     LION: "/src/assets/lion.svg",
@@ -187,6 +198,7 @@ function App() {
             payload: RoomKickedPayload
         ) {
             setRoom(null);
+            forgetRoomCode();
 
             setPrivateState({
                 hand: [],
@@ -206,6 +218,37 @@ function App() {
                 "",
                 window.location.pathname
             );
+        }
+
+        function reconnectToRememberedRoom() {
+            const rememberedRoomCode = getLastRoomCode();
+            if (!rememberedRoomCode) return;
+
+            socket.emit(
+                "room:reconnect",
+                { roomCode: rememberedRoomCode, sessionId },
+                (response: SocketResponse) => {
+                    if (!response.ok) {
+                        forgetRoomCode();
+                        return;
+                    }
+
+                    if (response.roomCode) {
+                        rememberRoomCode(response.roomCode);
+                        window.history.replaceState(
+                            null,
+                            "",
+                            `/?room=${response.roomCode}`
+                        );
+                    }
+                }
+            );
+        }
+
+        socket.on("connect", reconnectToRememberedRoom);
+
+        if (socket.connected) {
+            reconnectToRememberedRoom();
         }
 
         socket.on(
@@ -240,6 +283,8 @@ function App() {
         }
 
         return () => {
+            socket.off("connect", reconnectToRememberedRoom);
+
             socket.off(
                 "room:update",
                 handleRoomUpdate
@@ -273,7 +318,7 @@ function App() {
     const me = useMemo(() => {
         return room?.players.find(
             (player: any) =>
-                player.id === socket.id
+                player.id === sessionId
         );
     }, [room]);
 
@@ -316,8 +361,8 @@ function App() {
         ]);
 
     const isHost =
-        room?.hostSocketId ===
-        socket.id;
+        room?.hostPlayerId ===
+        sessionId;
 
     const {
         visualRacers,
@@ -355,7 +400,9 @@ function App() {
             "room:create",
             {
                 playerName:
-                    playerName.trim()
+                    playerName.trim(),
+
+                sessionId
             },
             (
                 response:
@@ -372,6 +419,8 @@ function App() {
                 if (
                     response.roomCode
                 ) {
+                    rememberRoomCode(response.roomCode);
+
                     window.history.pushState(
                         null,
                         "",
@@ -392,7 +441,9 @@ function App() {
                         .toUpperCase(),
 
                 playerName:
-                    playerName.trim()
+                    playerName.trim(),
+
+                sessionId
             },
             (
                 response:
@@ -409,6 +460,8 @@ function App() {
                 if (
                     response.roomCode
                 ) {
+                    rememberRoomCode(response.roomCode);
+
                     window.history.pushState(
                         null,
                         "",
@@ -420,33 +473,9 @@ function App() {
     }
 
     function toggleReady() {
-        if (
-            !room ||
-            !me
-        ) {
+        if (!room) {
             return;
         }
-
-        /*
-         * me.ready describes the state before the click.
-         *
-         * false -> Ready:
-         * use the normal positive confirmation sound.
-         *
-         * true -> Unready:
-         * use the deeper negative confirmation sound.
-         */
-        playEffect(
-            me.ready
-                ? "ui-unready"
-                : "ui-confirm",
-            {
-                volume:
-                    me.ready
-                        ? 0.78
-                        : 0.7
-            }
-        );
 
         socket.emit(
             "player:ready",
@@ -606,7 +635,7 @@ function App() {
                 }
 
                 /*
-                 * Games with 3–9 players allow exactly
+                 * Games with 3ï¿½9 players allow exactly
                  * one selected card at a time. Clicking
                  * another card replaces the selection.
                  */
@@ -930,11 +959,11 @@ function App() {
                     CRAZY RACING
                 </h1>
 
-                <div className="roomInformation">
-                    <AudioMenuButton
-                        placement="header"
-                    />
+                <AudioMenuButton
+                    placement="header"
+                />
 
+                <div className="roomInformation">
                     <span>
                         Room:{" "}
                         <strong>
@@ -975,7 +1004,7 @@ function App() {
                                         "player",
 
                                         player.id ===
-                                            socket.id
+                                            sessionId
                                             ? "playerSelf"
                                             : "",
 
@@ -1104,7 +1133,7 @@ function App() {
                         "betting" && (
                             <BettingPhase
                                 socketPlayerId={
-                                    socket.id
+                                    sessionId
                                 }
                                 currentPlayerName={
                                     currentDraftPlayer
@@ -1175,18 +1204,11 @@ function App() {
                                                             selectedDoubledTicketId ===
                                                             ticket.id
                                                         }
-                                                        onSelect={() => {
-                                                            playEffect(
-                                                                "bet-draft",
-                                                                {
-                                                                    volume: 0.55
-                                                                }
-                                                            );
-
+                                                        onSelect={() =>
                                                             setSelectedDoubledTicketId(
                                                                 ticket.id
-                                                            );
-                                                        }}
+                                                            )
+                                                        }
                                                     />
                                                 )
                                             )}
@@ -1465,7 +1487,7 @@ function App() {
                                                     room.payoutSummary
                                                 }
                                                 currentPlayerId={
-                                                    socket.id
+                                                    sessionId
                                                 }
                                             />
                                         ) : (
@@ -1756,7 +1778,7 @@ function App() {
                                                             any
                                                     ) =>
                                                         player.id ===
-                                                        room.hostSocketId ||
+                                                        room.hostPlayerId ||
                                                         player.raceAgain
                                                 )
                                                 .map(
