@@ -70,4 +70,7 @@ export const environment = Object.freeze({
     isProduction: nodeEnv === "production",
     port: readPort(),
     clientOrigins: readClientOrigins(nodeEnv),
+    appVersion: process.env.APP_VERSION?.trim() || "0.5.0",
+    logLevel: process.env.LOG_LEVEL?.trim() || (nodeEnv === "production" ? "info" : "debug"),
+    shutdownTimeoutMs: 10_000,
 });

@@ -1,9 +1,9 @@
 import type {
     BetRiskSide,
     BetTicketTier
-} from "../cards/BettingTickets";
-import type { RacerName } from "../racers/Racers";
-import type { SideBetId } from "../cards/SideBets";
+} from "../cards/BettingTickets.js";
+import type { RacerName } from "../racers/Racers.js";
+import type { SideBetId } from "../cards/SideBets.js";
 
 export type TicketStackKey =
     | RacerName

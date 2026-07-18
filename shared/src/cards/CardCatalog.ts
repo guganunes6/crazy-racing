@@ -1,4 +1,4 @@
-import { RacerName, RACERS } from "../racers/Racers";
+import { RacerName, RACERS } from "../racers/Racers.js";
 
 export type CardAction =
     | { type: "RECOVER" }

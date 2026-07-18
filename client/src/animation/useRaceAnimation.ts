@@ -153,21 +153,15 @@ export function useRaceAnimation({
         playEffect
     } = useSound();
 
-    function applyVisualRacers(
-        nextRacers:
-            RacerState[]
-    ): void {
-        const cloned =
-            cloneRacers(
-                nextRacers
-            );
+    function applyVisualRacers(nextRacers: RacerState[]): void {
+        if (sameRacers(visualRacersRef.current, nextRacers)) {
+            return;
+        }
 
-        visualRacersRef.current =
-            cloned;
+        const cloned = cloneRacers(nextRacers);
 
-        setVisualRacers(
-            cloned
-        );
+        visualRacersRef.current = cloned;
+        setVisualRacers(cloned);
     }
 
     useEffect(() => {
@@ -320,7 +314,12 @@ export function useRaceAnimation({
             );
         }
 
-        void processQueue();
+        if (
+            queueRef.current.length > 0 &&
+            !processingRef.current
+        ) {
+            void processQueue();
+        }
 
         async function processQueue(): Promise<void> {
             if (
@@ -883,6 +882,38 @@ function cloneRacers(
             ...racer
         })
     );
+}
+
+function sameRacers(
+    a: RacerState[],
+    b: RacerState[],
+): boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (a.length !== b.length) {
+        return false;
+    }
+
+    for (let i = 0; i < a.length; i++) {
+        const ra = a[i];
+        const rb = b[i];
+
+        if (
+            ra.name !== rb.name ||
+            ra.position !== rb.position ||
+            ra.lane !== rb.lane ||
+            ra.facing !== rb.facing ||
+            ra.fallen !== rb.fallen ||
+            ra.finished !== rb.finished ||
+            ra.dq !== rb.dq
+        ) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function wait(

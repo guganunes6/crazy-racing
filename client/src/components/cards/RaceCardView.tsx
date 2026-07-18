@@ -4,6 +4,7 @@ import type {
     RacerName
 } from "@crazy-racing/shared";
 import "./RaceCardView.css";
+import { racerImages } from "../../assets/racerAssets";
 
 type RaceCardViewProps = {
     definition: RaceCardDefinition;
@@ -13,12 +14,6 @@ type RaceCardViewProps = {
     onClick?: () => void;
 };
 
-const racerImages: Record<RacerName, string> = {
-    LION: "/src/assets/lion.svg",
-    HOTDOG: "/src/assets/hotdog.svg",
-    FISH: "/src/assets/fish.svg",
-    QUEEN: "/src/assets/queen.svg"
-};
 
 const allRacers: RacerName[] = [
     "LION",

@@ -3,14 +3,8 @@ import type {
     RacerName
 } from "@crazy-racing/shared";
 import "./DraftedTicketIcon.css";
+import { racerImages } from "../../assets/racerAssets";
 
-const racerImages:
-    Record<RacerName, string> = {
-    LION: "/src/assets/lion.svg",
-    HOTDOG: "/src/assets/hotdog.svg",
-    FISH: "/src/assets/fish.svg",
-    QUEEN: "/src/assets/queen.svg"
-};
 
 type DraftedTicketIconProps = {
     ticket: DraftedBetTicket;

@@ -1,4 +1,4 @@
-﻿import {
+import {
     useEffect,
     useRef
 } from "react";
@@ -11,21 +11,8 @@ import type {
     PodiumEntry,
     RacerName
 } from "./BoardModel";
+import { racerImages } from "../assets/racerAssets";
 
-const racerImages:
-    Record<RacerName, string> = {
-    QUEEN:
-        "/src/assets/queen.svg",
-
-    FISH:
-        "/src/assets/fish.svg",
-
-    HOTDOG:
-        "/src/assets/hotdog.svg",
-
-    LION:
-        "/src/assets/lion.svg"
-};
 
 type PodiumProps = {
     podium: PodiumEntry[];

@@ -1,4 +1,4 @@
-import type { RacerName } from "../racers/Racers";
+import type { RacerName } from "../racers/Racers.js";
 
 export type DisqualificationReason =
     | "back-out-of-bounds"

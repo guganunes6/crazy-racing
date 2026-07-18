@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -44,6 +44,7 @@ import {
 import { getAvailableTickets } from "./betting/TicketStacks.js";
 
 import { environment } from "./config/environment.js";
+import { logger } from "./observability/logger.js";
 
 import {
     ReconnectionManager,
@@ -51,6 +52,37 @@ import {
 } from "./network/ReconnectionManager.js";
 
 const app = express();
+const startedAt = Date.now();
+let isShuttingDown = false;
+
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+
+app.use((request, response, next) => {
+    const requestStartedAt = Date.now();
+
+    response.on("finish", () => {
+        if (request.path === "/health" || request.path === "/ready") {
+            return;
+        }
+
+        logger.info("http_request", {
+            method: request.method,
+            path: request.path,
+            statusCode: response.statusCode,
+            durationMs: Date.now() - requestStartedAt,
+        });
+    });
+
+    next();
+});
+
+app.use((_request, response, next) => {
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("X-Frame-Options", "DENY");
+    response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+});
 
 const corsOptions: CorsOptions = {
     origin(origin, callback) {
@@ -76,8 +108,31 @@ const io = new Server(httpServer, {
 const rooms = new Map<string, Room>();
 
 app.get("/health", (_request, response) => {
-    response.json({
-        ok: true,
+    response.status(200).json({
+        status: "ok",
+        version: environment.appVersion,
+        environment: environment.nodeEnv,
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+    });
+});
+
+app.get("/ready", (_request, response) => {
+    if (isShuttingDown) {
+        response.status(503).json({
+            status: "shutting_down",
+            timestamp: new Date().toISOString(),
+        });
+        return;
+    }
+
+    response.status(200).json({
+        status: "ready",
+        version: environment.appVersion,
+        activeRooms: rooms.size,
+        connectedSockets: io.engine.clientsCount,
+        startedAt: new Date(startedAt).toISOString(),
+        timestamp: new Date().toISOString(),
     });
 });
 
@@ -251,6 +306,11 @@ function requireHost(room: Room, socketId: string): void {
 }
 
 io.on("connection", (socket) => {
+    logger.info("socket_connected", {
+        socketId: socket.id,
+        transport: socket.conn.transport.name,
+    });
+
     socket.on("room:create", ({ playerName, sessionId }, callback) => {
         try {
             const room = createRoom(
@@ -851,7 +911,12 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
+        logger.info("socket_disconnected", {
+            socketId: socket.id,
+            reason,
+        });
+
         for (const room of rooms.values()) {
             const player = markPlayerDisconnected(room, socket.id);
 
@@ -866,11 +931,72 @@ io.on("connection", (socket) => {
     });
 });
 
-httpServer.listen(environment.port, "0.0.0.0", () => {
-    console.log(
-        `CRAZY RACING server running on port ${environment.port} (${environment.nodeEnv})`,
-    );
-    console.log(
-        `Allowed client origins: ${environment.clientOrigins.join(", ")}`,
-    );
+app.use((_request: Request, response: Response) => {
+    response.status(404).json({
+        error: "Not found",
+    });
+});
+
+app.use(
+    (error: unknown, request: Request, response: Response, _next: NextFunction) => {
+        logger.error("unhandled_http_error", {
+            error,
+            method: request.method,
+            path: request.path,
+        });
+
+        if (response.headersSent) {
+            _next(error);
+            return;
+        }
+
+        response.status(500).json({
+            error: "Internal server error",
+        });
+    },
+);
+
+const listener = httpServer.listen(environment.port, "0.0.0.0", () => {
+    logger.info("server_started", {
+        port: environment.port,
+        environment: environment.nodeEnv,
+        version: environment.appVersion,
+        allowedClientOrigins: environment.clientOrigins,
+    });
+});
+
+function shutdown(signal: NodeJS.Signals): void {
+    if (isShuttingDown) {
+        return;
+    }
+
+    isShuttingDown = true;
+    logger.info("shutdown_started", { signal });
+
+    const forceExitTimer = setTimeout(() => {
+        logger.error("shutdown_forced", {
+            timeoutMs: environment.shutdownTimeoutMs,
+        });
+        process.exit(1);
+    }, environment.shutdownTimeoutMs);
+
+    forceExitTimer.unref();
+
+    io.close(() => {
+        clearTimeout(forceExitTimer);
+        logger.info("shutdown_complete");
+        process.exit(0);
+    });
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+process.on("uncaughtException", (error) => {
+    logger.error("uncaught_exception", { error });
+    shutdown("SIGTERM");
+});
+
+process.on("unhandledRejection", (reason) => {
+    logger.error("unhandled_rejection", { reason });
 });

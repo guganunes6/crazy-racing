@@ -1,29 +1,29 @@
-export * from "./board/Board";
+export * from "./board/Board.js";
 
-export * from "./cards/Cards";
+export * from "./cards/Cards.js";
 
-export * from "./racers/Racers";
+export * from "./racers/Racers.js";
 
-export * from "./rules/RaceRules";
+export * from "./rules/RaceRules.js";
 
-export * from "./types/Racer";
+export * from "./types/Racer.js";
 
-export * from "./types/Podium";
+export * from "./types/Podium.js";
 
-export * from "./cards/CardCatalog";
+export * from "./cards/CardCatalog.js";
 
-export * from "./cards/BettingTickets";
+export * from "./cards/BettingTickets.js";
 
-export * from "./cards/SideBets";
+export * from "./cards/SideBets.js";
 
-export * from "./types/Betting";
+export * from "./types/Betting.js";
 
-export * from "./types/PublicGameState";
+export * from "./types/PublicGameState.js";
 
-export * from "./types/RaceEvent";
+export * from "./types/RaceEvent.js";
 
-export * from "./types/Payout";
+export * from "./types/Payout.js";
 
-export * from "./types/Replay";
+export * from "./types/Replay.js";
 
-export * from "./life/LifeOutcomes";
+export * from "./life/LifeOutcomes.js";

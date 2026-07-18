@@ -1,26 +1,26 @@
 import type {
     DraftedBetTicket
-} from "./Betting";
+} from "./Betting.js";
 
 import type {
     RacePayoutSummary
-} from "./Payout";
+} from "./Payout.js";
 
 import type {
     PodiumEntry
-} from "./Podium";
+} from "./Podium.js";
 
 import type {
     RaceEvent
-} from "./RaceEvent";
+} from "./RaceEvent.js";
 
 import type {
     RacerState
-} from "./Racer";
+} from "./Racer.js";
 
 import type {
     SideBetDefinition
-} from "../cards/SideBets";
+} from "../cards/SideBets.js";
 
 export type ReplayPlayer = {
     id: string;

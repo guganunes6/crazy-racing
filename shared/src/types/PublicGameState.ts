@@ -2,15 +2,15 @@ import type {
     AvailableTicket,
     BettingDraftState,
     DraftedBetTicket
-} from "./Betting";
+} from "./Betting.js";
 import type {
     PodiumEntry,
     RacerState,
     RaceCard
-} from "../index";
+} from "../index.js";
 import type {
     SideBetDefinition
-} from "../cards/SideBets";
+} from "../cards/SideBets.js";
 
 export type PublicPlayerState = {
     id: string;

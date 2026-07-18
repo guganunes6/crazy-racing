@@ -1,51 +1,22 @@
-import {
-    useContext,
-    useEffect
-} from "react";
+import { useContext, useEffect } from "react";
 
-import {
-    SoundContext
-} from "./SoundProvider";
-
-import type {
-    MusicMode
-} from "./SoundManager";
+import { SoundContext } from "./SoundProvider";
+import type { MusicMode } from "./SoundManager";
 
 export function useSound() {
-    const context =
-        useContext(
-            SoundContext
-        );
+    const context = useContext(SoundContext);
 
     if (!context) {
-        throw new Error(
-            "useSound must be used inside SoundProvider."
-        );
+        throw new Error("useSound must be used inside a SoundProvider.");
     }
 
     return context;
 }
 
-export function useGameMusic(
-    mode:
-        MusicMode
-): void {
-    const {
-        setMusicMode
-    } = useSound();
+export function useGameMusic(mode: MusicMode) {
+    const { setMusicMode } = useSound();
 
     useEffect(() => {
-        setMusicMode(
-            mode
-        );
-
-        return () => {
-            setMusicMode(
-                "none"
-            );
-        };
-    }, [
-        mode,
-        setMusicMode
-    ]);
+        setMusicMode(mode);
+    }, [mode, setMusicMode]);
 }

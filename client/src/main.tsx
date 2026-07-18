@@ -40,6 +40,7 @@ import { PauseButton } from "./components/settings/PauseButton";
 import { GamePauseOverlay } from "./components/network/GamePauseOverlay";
 import { SoundControls } from "./components/settings/SoundControls";
 import { environment } from "./config/environment";
+import { racerImages } from "./assets/racerAssets";
 
 import {
     forgetRoomCode,
@@ -50,18 +51,15 @@ import {
 
 import "./styles.css";
 
+const EMPTY_RACERS: RacerState[] = [];
+const EMPTY_RACE_EVENTS: RaceEvent[] = [];
+
 const sessionId = getSessionId();
 
 const socket = io(environment.serverUrl, {
     auth: { sessionId },
 });
 
-const racerImages: Record<string, string> = {
-    LION: "/src/assets/lion.svg",
-    HOTDOG: "/src/assets/hotdog.svg",
-    FISH: "/src/assets/fish.svg",
-    QUEEN: "/src/assets/queen.svg",
-};
 
 type SocketResponse = {
     ok: boolean;
@@ -342,16 +340,21 @@ function App() {
 
     const isHost = room?.hostPlayerId === sessionId;
 
+    const racers = (room?.racers ?? EMPTY_RACERS) as RacerState[];
+    const raceEvents = (room?.raceEvents ?? EMPTY_RACE_EVENTS) as RaceEvent[];
+
+    const raceAnimationEnabled =
+        !room?.pause?.isPaused &&
+        (room?.phase === "racing" ||
+            room?.phase === "reshuffle-required" ||
+            room?.phase === "race-complete");
+
     const { visualRacers, activeEvent, activeCardOwner, isAnimating } =
         useRaceAnimation({
-            racers: (room?.racers ?? []) as RacerState[],
-            raceEvents: (room?.raceEvents ?? []) as RaceEvent[],
+            racers,
+            raceEvents,
             raceNumber: room?.raceNumber ?? 0,
-            enabled:
-                !room?.pause?.isPaused &&
-                (room?.phase === "racing" ||
-                    room?.phase === "reshuffle-required" ||
-                    room?.phase === "race-complete"),
+            enabled: raceAnimationEnabled,
         });
 
     function handleSocketResponse(response: SocketResponse): boolean {

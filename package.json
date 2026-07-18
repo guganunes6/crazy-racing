@@ -7,12 +7,22 @@
     "shared"
   ],
   "scripts": {
-    "dev:client": "npm run dev -w client",
-    "dev:server": "npm run dev -w server",
-    "build": "npm run build:client && npm run build:server",
+    "dev:client": "npm run build:shared && npm run dev -w client",
+    "dev:server": "npm run build:shared && npm run dev -w server",
+    "build": "npm run clean && npm run build:shared && npm run check:client && npm run check:server && npm run build:client && npm run build:server",
+    "build:shared": "npm run build -w shared",
     "build:client": "npm run build -w client",
     "build:server": "npm run build -w server",
+    "check": "npm run build:shared && npm run check:client && npm run check:server",
+    "check:shared": "npm run check -w shared",
+    "check:client": "npm run check -w client",
+    "check:server": "npm run check -w server",
+    "clean": "npm run clean -w shared && node -e \"require('fs').rmSync('client/dist',{recursive:true,force:true});require('fs').rmSync('server/dist',{recursive:true,force:true})\"",
     "start": "npm run start -w server",
     "preview:client": "npm run preview -w client"
+  },
+  "version": "0.5.0",
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
