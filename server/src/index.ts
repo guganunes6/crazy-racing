@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import type { CorsOptions } from "cors";
 import {
     CARD_CATALOG_BY_ID,
     type BetRiskSide,
@@ -42,6 +43,8 @@ import {
 
 import { getAvailableTickets } from "./betting/TicketStacks.js";
 
+import { environment } from "./config/environment.js";
+
 import {
     ReconnectionManager,
     RECONNECT_GRACE_PERIOD_MS,
@@ -49,15 +52,25 @@ import {
 
 const app = express();
 
-app.use(cors());
+const corsOptions: CorsOptions = {
+    origin(origin, callback) {
+        // Requests without an Origin header include health checks and server tools.
+        if (!origin || environment.clientOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
+    methods: ["GET", "POST"],
+};
+
+app.use(cors(corsOptions));
 
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
-    cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"],
-    },
+    cors: corsOptions,
 });
 
 const rooms = new Map<string, Room>();
@@ -853,8 +866,11 @@ io.on("connection", (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3001;
-
-httpServer.listen(PORT, () => {
-    console.log(`CRAZY RACING server running on http://localhost:${PORT}`);
+httpServer.listen(environment.port, "0.0.0.0", () => {
+    console.log(
+        `CRAZY RACING server running on port ${environment.port} (${environment.nodeEnv})`,
+    );
+    console.log(
+        `Allowed client origins: ${environment.clientOrigins.join(", ")}`,
+    );
 });

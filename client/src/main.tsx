@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import {
@@ -39,6 +39,7 @@ import { AudioMenuButton } from "./components/settings/AudioMenuButton";
 import { PauseButton } from "./components/settings/PauseButton";
 import { GamePauseOverlay } from "./components/network/GamePauseOverlay";
 import { SoundControls } from "./components/settings/SoundControls";
+import { environment } from "./config/environment";
 
 import {
     forgetRoomCode,
@@ -51,7 +52,7 @@ import "./styles.css";
 
 const sessionId = getSessionId();
 
-const socket = io("http://localhost:3001", {
+const socket = io(environment.serverUrl, {
     auth: { sessionId },
 });
 
