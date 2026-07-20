@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id                 String   @id @db.Uuid
+  username           String   @unique @db.VarChar(24)
+  usernameNormalized String   @unique @map("username_normalized") @db.VarChar(24)
+  email              String   @unique @db.VarChar(320)
+  avatarUrl          String?  @map("avatar_url")
+  authProvider       String   @default("PASSWORD") @map("auth_provider") @db.VarChar(32)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz(6)
+
+  @@map("profiles")
+}

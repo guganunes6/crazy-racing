@@ -3,5 +3,8 @@ dist/
 .env
 .env.local
 .env.*.local
+server/.env
+client/.env.local
+server/src/generated/prisma/
 .DS_Store
 *.log
