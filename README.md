@@ -922,5 +922,5 @@ Some ideas for future improvements include:
 * Tournaments
 * Seasons
 
-Happy racing! 🏁
+# Happy racing! 🏁
 
