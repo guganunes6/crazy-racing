@@ -1,0 +1,233 @@
+.authPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 8px 0 18px;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.82);
+}
+
+.authPanelHeading,
+.authSignedIn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.authPanelHeading h2 {
+    margin: 3px 0 0;
+    color: #f8fafc;
+    font-size: 20px;
+}
+
+.authEyebrow {
+    color: #7dd3fc;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.authOptionalBadge {
+    flex-shrink: 0;
+    border-radius: 999px;
+    padding: 4px 9px;
+    background: rgba(148, 163, 184, 0.14);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.authDescription {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.authModeTabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    border-radius: 12px;
+    padding: 4px;
+    background: #0b1220;
+}
+
+.authModeTabs button {
+    margin: 0;
+    padding: 9px 12px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.authModeTabs .authModeTabActive {
+    background: #1e293b;
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.authForm {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.authForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.authForm input {
+    width: 100%;
+    margin: 0;
+}
+
+.authPrimaryButton,
+.authGoogleButton,
+.authSecondaryButton {
+    width: 100%;
+    margin: 0;
+}
+
+.authPrimaryButton {
+    margin-top: 3px;
+}
+
+.authGoogleButton,
+.authSecondaryButton {
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+.authGoogleButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+}
+
+.authGoogleMark {
+    display: grid;
+    width: 23px;
+    height: 23px;
+    place-items: center;
+    border-radius: 50%;
+    background: #f8fafc;
+    color: #1d4ed8;
+    font-weight: 900;
+}
+
+.authDivider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.authDivider::before,
+.authDivider::after {
+    height: 1px;
+    flex: 1;
+    background: #334155;
+    content: "";
+}
+
+.authFeedback {
+    margin: 0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.authFeedbackSuccess {
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+    color: #bbf7d0;
+}
+
+.authFeedbackError {
+    border: 1px solid rgba(239, 68, 68, 0.38);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fecaca;
+}
+
+.authPanelLoading {
+    min-height: 72px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    color: #cbd5e1;
+}
+
+.authSpinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(125, 211, 252, 0.25);
+    border-top-color: #7dd3fc;
+    border-radius: 50%;
+    animation: authSpin 800ms linear infinite;
+}
+
+.authSignedIn {
+    flex-wrap: wrap;
+}
+
+.authSignedInCopy {
+    min-width: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.authSignedInCopy strong,
+.authSignedInCopy span:last-child {
+    overflow-wrap: anywhere;
+}
+
+.authSignedInCopy span:last-child {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.authSignedIn .authSecondaryButton {
+    width: auto;
+    flex-shrink: 0;
+}
+
+.authSignedIn .authFeedback {
+    width: 100%;
+}
+
+@keyframes authSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .authPanelHeading,
+    .authSignedIn {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .authOptionalBadge {
+        align-self: flex-start;
+    }
+
+    .authSignedIn .authSecondaryButton {
+        width: 100%;
+    }
+}

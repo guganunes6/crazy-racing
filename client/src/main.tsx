@@ -20,6 +20,7 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { useGameMusic, useSound } from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
+import { AuthPanel } from "./components/auth/AuthPanel";
 import { BettingPhase } from "./components/betting/BettingPhase";
 import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
 import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
@@ -812,6 +813,8 @@ function App() {
                     <h1>CRAZY RACING</h1>
 
                     <p>Create a racing room or join an existing one.</p>
+
+                    <AuthPanel />
 
                     <input
                         type="text"
