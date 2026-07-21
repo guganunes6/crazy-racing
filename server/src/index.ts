@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import { createServer } from "http";
@@ -8,6 +10,8 @@ import {
     type BetRiskSide,
     type TicketStackKey,
 } from "@crazy-racing/shared";
+
+import { authRouter } from "./auth/index.js";
 
 import {
     createRoom,
@@ -106,6 +110,10 @@ const io = new Server(httpServer, {
 });
 
 const rooms = new Map<string, Room>();
+
+app.use(express.json());
+
+app.use("/api/auth", authRouter);
 
 app.get("/health", (_request, response) => {
     response.status(200).json({
