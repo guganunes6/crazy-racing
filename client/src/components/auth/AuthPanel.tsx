@@ -11,6 +11,39 @@ type AuthPanelProps = {
     onContinueAsGuest: () => void;
 };
 
+export type AuthBackButtonProps = {
+    onClick: () => void;
+    disabled?: boolean;
+};
+
+export function AuthBackButton({ onClick, disabled = false }: AuthBackButtonProps) {
+    return (
+        <button
+            type="button"
+            className="authBackButton"
+            onClick={onClick}
+            disabled={disabled}
+            aria-label="Back to account options"
+            title="Back"
+        >
+            <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path
+                    d="M15 18l-6-6 6-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.25"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </svg>
+        </button>
+    );
+}
+
 function getFriendlyAuthError(error: unknown): string {
     if (error instanceof AuthError) {
         const message = error.message.toLowerCase();

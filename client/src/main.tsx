@@ -21,7 +21,7 @@ import { useAuth } from "./auth/AuthContext";
 import { useGameMusic, useSound } from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
-import { AuthPanel } from "./components/auth/AuthPanel";
+import { AuthBackButton, AuthPanel } from "./components/auth/AuthPanel";
 import { BettingPhase } from "./components/betting/BettingPhase";
 import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
 import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
@@ -848,6 +848,17 @@ function App() {
                         />
                     ) : (
                         <>
+                            {!isAuthenticated && continueAsGuest && (
+                                <AuthBackButton
+                                    onClick={() => {
+                                        setContinueAsGuest(false);
+                                        setPlayerName("");
+                                        setError("");
+                                    }}
+                                    disabled={reconnectStatus === "pending"}
+                                />
+                            )}
+
                             <p>Create a racing room or join an existing one.</p>
 
                             {isAuthenticated ? (
