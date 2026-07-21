@@ -86,6 +86,13 @@ input {
         letter-spacing: 1px;
     }
 
+.initialMenuTitle {
+    width: 100%;
+    margin: 0 0 18px;
+    padding: 4px 52px 0;
+    text-align: center;
+}
+
     .menu p {
         color: #cbd5e1;
     }

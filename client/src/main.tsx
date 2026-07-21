@@ -837,7 +837,7 @@ function App() {
                 <div className="card menu">
                     <AudioMenuButton placement="initial" />
 
-                    <h1>CRAZY RACING</h1>
+                    <h1 className="initialMenuTitle">CRAZY RACING</h1>
 
                     {!isAuthenticated && !continueAsGuest ? (
                         <AuthPanel
