@@ -16,6 +16,7 @@ import {
 
 import { useRaceAnimation } from "./animation/useRaceAnimation";
 import { SoundProvider } from "./audio/SoundProvider";
+import { AuthProvider } from "./auth/AuthProvider";
 import { useGameMusic, useSound } from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
@@ -1514,7 +1515,9 @@ function formatPhaseName(phase: string) {
 }
 
 createRoot(document.getElementById("root")!).render(
-    <SoundProvider>
-        <App />
-    </SoundProvider>,
+    <AuthProvider>
+        <SoundProvider>
+            <App />
+        </SoundProvider>
+    </AuthProvider>,
 );

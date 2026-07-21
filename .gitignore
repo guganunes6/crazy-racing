@@ -1,10 +1,13 @@
 node_modules/
 dist/
+**/.env*
 .env
 .env.local
 .env.*.local
-server/.env
+client/.env.development
 client/.env.local
+client/.env.production.local
+server/.env
 server/src/generated/prisma/
 .DS_Store
 *.log
