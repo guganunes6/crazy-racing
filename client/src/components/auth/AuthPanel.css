@@ -9,8 +9,7 @@
     background: rgba(15, 23, 42, 0.82);
 }
 
-.authPanelHeading,
-.authSignedIn {
+.authPanelHeading {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -28,23 +27,6 @@
     font-size: 11px;
     font-weight: 900;
     letter-spacing: 0.12em;
-}
-
-.authOptionalBadge {
-    flex-shrink: 0;
-    border-radius: 999px;
-    padding: 4px 9px;
-    background: rgba(148, 163, 184, 0.14);
-    color: #cbd5e1;
-    font-size: 11px;
-    font-weight: 800;
-}
-
-.authDescription {
-    margin: 0;
-    color: #cbd5e1;
-    font-size: 14px;
-    line-height: 1.45;
 }
 
 .authModeTabs {
@@ -92,6 +74,7 @@
 
 .authPrimaryButton,
 .authGoogleButton,
+.authGuestButton,
 .authSecondaryButton {
     width: 100%;
     margin: 0;
@@ -102,6 +85,7 @@
 }
 
 .authGoogleButton,
+.authGuestButton,
 .authSecondaryButton {
     border: 1px solid #475569;
     background: #1e293b;
@@ -112,18 +96,18 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
 }
 
-.authGoogleMark {
-    display: grid;
-    width: 23px;
-    height: 23px;
-    place-items: center;
-    border-radius: 50%;
-    background: #f8fafc;
-    color: #1d4ed8;
-    font-weight: 900;
+.authGoogleLogo {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+}
+
+.authGuestButton {
+    background: transparent;
+    color: #cbd5e1;
 }
 
 .authDivider {
@@ -179,35 +163,40 @@
     animation: authSpin 800ms linear infinite;
 }
 
-.authSignedIn {
-    flex-wrap: wrap;
+.initialAccountSummary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 13px 14px;
+    background: rgba(15, 23, 42, 0.72);
 }
 
-.authSignedInCopy {
+.initialAccountSummary > div {
     min-width: 0;
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 4px;
+    align-items: flex-start;
+    gap: 3px;
 }
 
-.authSignedInCopy strong,
-.authSignedInCopy span:last-child {
+.initialAccountSummary strong,
+.initialAccountSummary span:last-child {
+    max-width: 100%;
     overflow-wrap: anywhere;
 }
 
-.authSignedInCopy span:last-child {
+.initialAccountSummary span:last-child {
     color: #94a3b8;
-    font-size: 13px;
+    font-size: 12px;
 }
 
-.authSignedIn .authSecondaryButton {
+.initialAccountSummary .authSecondaryButton {
     width: auto;
     flex-shrink: 0;
-}
-
-.authSignedIn .authFeedback {
-    width: 100%;
 }
 
 @keyframes authSpin {
@@ -218,16 +207,12 @@
 
 @media (max-width: 480px) {
     .authPanelHeading,
-    .authSignedIn {
+    .initialAccountSummary {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .authOptionalBadge {
-        align-self: flex-start;
-    }
-
-    .authSignedIn .authSecondaryButton {
+    .initialAccountSummary .authSecondaryButton {
         width: 100%;
     }
 }

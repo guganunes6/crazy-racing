@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { AuthError } from "@supabase/supabase-js";
 
 import { useAuth } from "../../auth/AuthContext";
@@ -6,6 +6,10 @@ import { useAuth } from "../../auth/AuthContext";
 import "./AuthPanel.css";
 
 type AuthMode = "sign-in" | "sign-up";
+
+type AuthPanelProps = {
+    onContinueAsGuest: () => void;
+};
 
 function getFriendlyAuthError(error: unknown): string {
     if (error instanceof AuthError) {
@@ -41,15 +45,12 @@ function getFriendlyAuthError(error: unknown): string {
     return "Authentication failed. Please try again.";
 }
 
-export function AuthPanel() {
+export function AuthPanel({ onContinueAsGuest }: AuthPanelProps) {
     const {
-        user,
         isLoading,
-        isAuthenticated,
         signInWithPassword,
         signUpWithPassword,
         signInWithGoogle,
-        signOut,
     } = useAuth();
 
     const [mode, setMode] = useState<AuthMode>("sign-in");
@@ -59,16 +60,6 @@ export function AuthPanel() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
-
-    const displayName = useMemo(() => {
-        const metadataName = user?.user_metadata?.full_name;
-
-        if (typeof metadataName === "string" && metadataName.trim()) {
-            return metadataName.trim();
-        }
-
-        return user?.email ?? "Crazy Racing player";
-    }, [user]);
 
     function switchMode(nextMode: AuthMode) {
         setMode(nextMode);
@@ -147,56 +138,11 @@ export function AuthPanel() {
         }
     }
 
-    async function handleSignOut() {
-        setMessage("");
-        setError("");
-        setIsSubmitting(true);
-
-        try {
-            await signOut();
-            setEmail("");
-            setPassword("");
-            setConfirmPassword("");
-            setMode("sign-in");
-        } catch (caughtError) {
-            setError(getFriendlyAuthError(caughtError));
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
-
     if (isLoading) {
         return (
             <section className="authPanel authPanelLoading" aria-live="polite">
                 <span className="authSpinner" aria-hidden="true" />
                 <span>Restoring your account session…</span>
-            </section>
-        );
-    }
-
-    if (isAuthenticated) {
-        return (
-            <section className="authPanel authSignedIn" aria-live="polite">
-                <div className="authSignedInCopy">
-                    <span className="authEyebrow">SIGNED IN</span>
-                    <strong>{displayName}</strong>
-                    <span>Your account session will persist on this device.</span>
-                </div>
-
-                <button
-                    type="button"
-                    className="authSecondaryButton"
-                    onClick={handleSignOut}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? "Signing out…" : "Sign Out"}
-                </button>
-
-                {error && (
-                    <p className="authFeedback authFeedbackError" role="alert">
-                        {error}
-                    </p>
-                )}
             </section>
         );
     }
@@ -208,13 +154,7 @@ export function AuthPanel() {
                     <span className="authEyebrow">PLAYER ACCOUNT</span>
                     <h2>{mode === "sign-in" ? "Welcome back" : "Create account"}</h2>
                 </div>
-
-                <span className="authOptionalBadge">Optional</span>
             </div>
-
-            <p className="authDescription">
-                Sign in to keep an account session. You can still play as a guest.
-            </p>
 
             <div className="authModeTabs" role="tablist" aria-label="Authentication mode">
                 <button
@@ -305,8 +245,22 @@ export function AuthPanel() {
                 onClick={handleGoogleSignIn}
                 disabled={isSubmitting}
             >
-                <span className="authGoogleMark" aria-hidden="true">G</span>
+                <img
+                    className="authGoogleLogo"
+                    src="/google-g-logo.svg"
+                    alt=""
+                    aria-hidden="true"
+                />
                 Continue with Google
+            </button>
+
+            <button
+                type="button"
+                className="authGuestButton"
+                onClick={onContinueAsGuest}
+                disabled={isSubmitting}
+            >
+                Continue as Guest
             </button>
 
             {message && (
