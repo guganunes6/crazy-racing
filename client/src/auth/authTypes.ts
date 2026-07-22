@@ -13,6 +13,7 @@ export type SignUpCredentials = PasswordCredentials;
 export type CrazyRacingProfile = {
     id: string;
     username: string;
+    hasChosenUsername: boolean;
     email: string | null;
     avatarUrl: string | null;
     authProvider: string;
@@ -46,4 +47,6 @@ export type AuthContextValue = {
     signOut: () => Promise<void>;
     getAccessToken: () => string | null;
     refreshProfile: () => Promise<CrazyRacingProfile | null>;
+    checkUsernameAvailability: (username: string) => Promise<boolean>;
+    chooseUsername: (username: string) => Promise<CrazyRacingProfile>;
 };

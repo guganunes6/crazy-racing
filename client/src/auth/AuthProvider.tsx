@@ -8,7 +8,11 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 
-import { fetchAuthenticatedSession } from "./authApi";
+import {
+    fetchAuthenticatedSession,
+    fetchUsernameAvailability,
+    updateProfileUsername,
+} from "./authApi";
 import { AuthContext } from "./AuthContext";
 import type {
     AuthContextValue,
@@ -192,6 +196,37 @@ export function AuthProvider({ children }: PropsWithChildren) {
         [],
     );
 
+    const requireAccessToken = useCallback(() => {
+        const accessToken = sessionRef.current?.access_token;
+
+        if (!accessToken) {
+            throw new Error("You must be signed in to manage your username.");
+        }
+
+        return accessToken;
+    }, []);
+
+    const checkUsernameAvailability = useCallback(
+        async (username: string) =>
+            fetchUsernameAvailability(requireAccessToken(), username),
+        [requireAccessToken],
+    );
+
+    const chooseUsername = useCallback(
+        async (username: string) => {
+            const updatedProfile = await updateProfileUsername(
+                requireAccessToken(),
+                username,
+            );
+
+            setProfile(updatedProfile);
+            setProfileStatus("ready");
+            setProfileError(null);
+            return updatedProfile;
+        },
+        [requireAccessToken],
+    );
+
     const value = useMemo<AuthContextValue>(
         () => ({
             status: isSessionLoading
@@ -213,8 +248,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
             signOut,
             getAccessToken,
             refreshProfile,
+            checkUsernameAvailability,
+            chooseUsername,
         }),
         [
+            checkUsernameAvailability,
+            chooseUsername,
             getAccessToken,
             isSessionLoading,
             profile,

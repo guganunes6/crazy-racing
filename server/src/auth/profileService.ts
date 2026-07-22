@@ -50,6 +50,7 @@ export async function syncAuthenticatedProfile(
             id: authenticatedUser.id,
             username,
             usernameNormalized: normalizeUsername(username),
+            hasChosenUsername: false,
             email: authenticatedUser.email,
             avatarUrl: readAvatarUrl(authenticatedUser.user),
             authProvider: authenticatedUser.provider,
@@ -86,6 +87,25 @@ export async function updateUsername(
     profileId: string,
     requestedUsername: unknown,
 ): Promise<PublicProfile> {
+    const currentProfile = await prisma.profile.findUnique({
+        where: {
+            id: profileId,
+        },
+        select: {
+            hasChosenUsername: true,
+        },
+    });
+
+    if (!currentProfile) {
+        throw new Error("The Crazy Racing profile could not be found.");
+    }
+
+    if (currentProfile.hasChosenUsername) {
+        const error = new Error("Your Crazy Racing username has already been chosen.");
+        error.name = "UsernameAlreadyChosenError";
+        throw error;
+    }
+
     const username = validateUsername(requestedUsername);
     const usernameNormalized = normalizeUsername(username);
 
@@ -104,6 +124,7 @@ export async function updateUsername(
         data: {
             username,
             usernameNormalized,
+            hasChosenUsername: true,
         },
     });
 
@@ -166,6 +187,7 @@ function readAvatarUrl(user: User): string | null {
 function toPublicProfile(profile: {
     id: string;
     username: string;
+    hasChosenUsername: boolean;
     email: string | null;
     avatarUrl: string | null;
     authProvider: string;
@@ -176,6 +198,7 @@ function toPublicProfile(profile: {
     return {
         id: profile.id,
         username: profile.username,
+        hasChosenUsername: profile.hasChosenUsername,
         email: profile.email,
         avatarUrl: profile.avatarUrl,
         authProvider: profile.authProvider,

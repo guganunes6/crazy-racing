@@ -1,5 +1,15 @@
 const MIN_USERNAME_LENGTH = 3;
 const MAX_USERNAME_LENGTH = 20;
+const RESERVED_USERNAMES = new Set([
+    "admin",
+    "administrator",
+    "crazyracing",
+    "guest",
+    "moderator",
+    "null",
+    "system",
+    "undefined",
+]);
 
 export function normalizeUsername(value: string): string {
     return value.trim().toLowerCase();
@@ -20,6 +30,14 @@ export function validateUsername(value: unknown): string {
             `Username must contain between ${MIN_USERNAME_LENGTH} and ` +
             `${MAX_USERNAME_LENGTH} characters.`,
         );
+    }
+
+    if (RESERVED_USERNAMES.has(normalizeUsername(username))) {
+        throw new Error("That username is reserved. Choose another one.");
+    }
+
+    if (RESERVED_USERNAMES.has(normalizeUsername(username))) {
+        throw new Error("That username is reserved. Choose another one.");
     }
 
     if (!/^[A-Za-z0-9_]+$/.test(username)) {

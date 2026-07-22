@@ -11,7 +11,8 @@ model Profile {
   id                 String   @id @db.Uuid
   username           String   @unique @db.VarChar(24)
   usernameNormalized String   @unique @map("username_normalized") @db.VarChar(24)
-  email              String?   @unique @db.VarChar(320)
+  hasChosenUsername  Boolean  @default(false) @map("has_chosen_username")
+  email              String?  @unique @db.VarChar(320)
   avatarUrl          String?  @map("avatar_url")
   authProvider       String   @default("PASSWORD") @map("auth_provider") @db.VarChar(32)
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

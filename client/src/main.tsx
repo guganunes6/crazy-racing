@@ -22,6 +22,7 @@ import { useGameMusic, useSound } from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
 import { AuthBackButton, AuthPanel } from "./components/auth/AuthPanel";
+import { UsernameSetup } from "./components/auth/UsernameSetup";
 import { BettingPhase } from "./components/betting/BettingPhase";
 import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
 import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
@@ -838,6 +839,9 @@ function App() {
                                 setError("");
                             }}
                         />
+                    ) : isAuthenticated &&
+                      profile?.hasChosenUsername === false ? (
+                        <UsernameSetup />
                     ) : (
                         <>
                             {!isAuthenticated && continueAsGuest && (

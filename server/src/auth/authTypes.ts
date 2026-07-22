@@ -10,6 +10,7 @@ export type AuthenticatedUser = {
 export type PublicProfile = {
     id: string;
     username: string;
+    hasChosenUsername: boolean;
     email: string | null;
     avatarUrl: string | null;
     authProvider: string;

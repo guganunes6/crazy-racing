@@ -11,6 +11,15 @@ type ApiErrorPayload = {
     };
 };
 
+type UsernameAvailabilityResponse = {
+    username: string;
+    available: boolean;
+};
+
+type UpdateUsernameResponse = {
+    profile: CrazyRacingProfile;
+};
+
 export class AuthApiError extends Error {
     readonly status: number;
     readonly code: string | null;
@@ -37,6 +46,38 @@ export async function synchronizeProfile(
         accessToken,
         {
             method: "POST",
+        },
+    );
+
+    return response.profile;
+}
+
+export async function fetchUsernameAvailability(
+    accessToken: string,
+    username: string,
+): Promise<boolean> {
+    const search = new URLSearchParams({ username });
+    const response = await requestJson<UsernameAvailabilityResponse>(
+        `/api/auth/username-available?${search.toString()}`,
+        accessToken,
+    );
+
+    return response.available;
+}
+
+export async function updateProfileUsername(
+    accessToken: string,
+    username: string,
+): Promise<CrazyRacingProfile> {
+    const response = await requestJson<UpdateUsernameResponse>(
+        "/api/auth/username",
+        accessToken,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username }),
         },
     );
 

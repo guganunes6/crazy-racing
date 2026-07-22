@@ -93,11 +93,25 @@ authRouter.patch(
         } catch (error) {
             if (
                 error instanceof Error &&
-                error.name === "UsernameConflictError"
+                (error.name === "UsernameConflictError" ||
+                    readErrorCode(error) === "P2002")
             ) {
                 response.status(409).json({
                     error: {
                         code: "USERNAME_TAKEN",
+                        message: "That username is already being used.",
+                    },
+                });
+                return;
+            }
+
+            if (
+                error instanceof Error &&
+                error.name === "UsernameAlreadyChosenError"
+            ) {
+                response.status(409).json({
+                    error: {
+                        code: "USERNAME_ALREADY_CHOSEN",
                         message: error.message,
                     },
                 });
@@ -163,4 +177,17 @@ function getErrorMessage(error: unknown): string {
     return error instanceof Error
         ? error.message
         : "The request could not be completed.";
+}
+
+function readErrorCode(error: unknown): string | null {
+    if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof error.code === "string"
+    ) {
+        return error.code;
+    }
+
+    return null;
 }

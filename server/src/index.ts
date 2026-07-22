@@ -98,7 +98,8 @@ const corsOptions: CorsOptions = {
 
         callback(new Error(`Origin ${origin} is not allowed by CORS.`));
     },
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));

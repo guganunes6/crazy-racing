@@ -279,3 +279,92 @@
 .menu {
     position: relative;
 }
+
+.usernameSetup {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 8px 0 18px;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 18px;
+    background: rgba(15, 23, 42, 0.82);
+    text-align: left;
+}
+
+.usernameSetupHeading {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.usernameSetupHeading h2,
+.usernameSetupHeading p {
+    margin: 0;
+}
+
+.usernameSetupHeading h2 {
+    color: #f8fafc;
+    font-size: 21px;
+}
+
+.usernameSetupHeading p {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.usernameSetupForm {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.usernameSetupForm label {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.usernameSetupForm input {
+    width: 100%;
+    margin: 0;
+}
+
+.usernameRules,
+.usernameSetupAccount {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.usernameAvailability {
+    min-height: 18px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.usernameAvailability-idle,
+.usernameAvailability-checking {
+    color: #94a3b8;
+}
+
+.usernameAvailability-available {
+    color: #86efac;
+}
+
+.usernameAvailability-unavailable,
+.usernameAvailability-error {
+    color: #fca5a5;
+}
+
+.usernameSetupAccount {
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.usernameSetupSignOut {
+    width: 100%;
+}
