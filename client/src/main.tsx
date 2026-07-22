@@ -89,7 +89,15 @@ type RoomKickedPayload = {
 type ReconnectStatus = "idle" | "pending";
 
 function App() {
-    const { user, isAuthenticated, signOut } = useAuth();
+    const {
+        user,
+        profile,
+        profileError,
+        isAuthenticated,
+        isProfileLoading,
+        refreshProfile,
+        signOut,
+    } = useAuth();
 
     const [room, setRoom] = useState<any>(null);
 
@@ -321,23 +329,7 @@ function App() {
         }
     }, [activeReplay, room?.phase]);
 
-    const authenticatedPlayerName = useMemo(() => {
-        const metadataCandidates = [
-            user?.user_metadata?.full_name,
-            user?.user_metadata?.name,
-            user?.user_metadata?.preferred_username,
-        ];
-
-        for (const candidate of metadataCandidates) {
-            if (typeof candidate === "string" && candidate.trim()) {
-                return candidate.trim();
-            }
-        }
-
-        const emailName = user?.email?.split("@")[0]?.trim();
-
-        return emailName || "Crazy Racing player";
-    }, [user]);
+    const authenticatedPlayerName = profile?.username ?? "";
 
     const activePlayerName = isAuthenticated
         ? authenticatedPlayerName
@@ -866,26 +858,51 @@ function App() {
                                     className="initialAccountSummary"
                                     aria-label="Signed-in account"
                                 >
-                                    <div>
+                                    <div className="initialAccountIdentity">
                                         <span className="authEyebrow">SIGNED IN</span>
-                                        <strong>{authenticatedPlayerName}</strong>
+                                        <strong>
+                                            {isProfileLoading
+                                                ? "Synchronizing profile…"
+                                                : authenticatedPlayerName ||
+                                                  "Profile unavailable"}
+                                        </strong>
                                         {user?.email && <span>{user.email}</span>}
+                                        {profileError && (
+                                            <span className="profileSyncError">
+                                                {profileError}
+                                            </span>
+                                        )}
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        className="authSecondaryButton"
-                                        onClick={() => {
-                                            void signOut().catch(() => {
-                                                setError(
-                                                    "Could not sign out. Please try again.",
-                                                );
-                                            });
-                                        }}
-                                        disabled={reconnectStatus === "pending"}
-                                    >
-                                        Sign Out
-                                    </button>
+                                    <div className="initialAccountActions">
+                                        {profileError && (
+                                            <button
+                                                type="button"
+                                                className="authSecondaryButton"
+                                                onClick={() => {
+                                                    void refreshProfile();
+                                                }}
+                                                disabled={isProfileLoading}
+                                            >
+                                                Retry Profile
+                                            </button>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            className="authSecondaryButton"
+                                            onClick={() => {
+                                                void signOut().catch(() => {
+                                                    setError(
+                                                        "Could not sign out. Please try again.",
+                                                    );
+                                                });
+                                            }}
+                                            disabled={reconnectStatus === "pending"}
+                                        >
+                                            Sign Out
+                                        </button>
+                                    </div>
                                 </section>
                             ) : (
                                 <input

@@ -2,22 +2,58 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type PropsWithChildren,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 
+import { fetchAuthenticatedSession } from "./authApi";
 import { AuthContext } from "./AuthContext";
 import type {
     AuthContextValue,
+    CrazyRacingProfile,
     PasswordCredentials,
+    ProfileStatus,
     SignUpCredentials,
 } from "./authTypes";
 import { supabase } from "./supabaseClient";
 
+function getProfileErrorMessage(error: unknown): string {
+    if (error instanceof TypeError) {
+        return "Could not reach the Crazy Racing server to load your profile.";
+    }
+
+    if (error instanceof Error && error.message.trim()) {
+        return error.message;
+    }
+
+    return "Could not load your Crazy Racing profile.";
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
     const [session, setSession] = useState<Session | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isSessionLoading, setIsSessionLoading] = useState(true);
+    const [profile, setProfile] = useState<CrazyRacingProfile | null>(null);
+    const [profileStatus, setProfileStatus] =
+        useState<ProfileStatus>("idle");
+    const [profileError, setProfileError] = useState<string | null>(null);
+
+    const sessionRef = useRef<Session | null>(null);
+    const profileRequestIdRef = useRef(0);
+
+    const applySession = useCallback((nextSession: Session | null) => {
+        sessionRef.current = nextSession;
+        setSession(nextSession);
+        setIsSessionLoading(false);
+
+        if (!nextSession) {
+            profileRequestIdRef.current += 1;
+            setProfile(null);
+            setProfileStatus("idle");
+            setProfileError(null);
+        }
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -31,8 +67,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
                 console.error("Failed to restore the Supabase session.", error);
             }
 
-            setSession(data.session ?? null);
-            setIsLoading(false);
+            applySession(data.session ?? null);
         });
 
         const {
@@ -42,15 +77,63 @@ export function AuthProvider({ children }: PropsWithChildren) {
                 return;
             }
 
-            setSession(nextSession);
-            setIsLoading(false);
+            applySession(nextSession);
         });
 
         return () => {
             isMounted = false;
             subscription.unsubscribe();
         };
+    }, [applySession]);
+
+    const refreshProfile = useCallback(async () => {
+        const activeSession = sessionRef.current;
+
+        if (!activeSession) {
+            setProfile(null);
+            setProfileStatus("idle");
+            setProfileError(null);
+            return null;
+        }
+
+        const requestId = profileRequestIdRef.current + 1;
+        profileRequestIdRef.current = requestId;
+
+        setProfileStatus("loading");
+        setProfileError(null);
+
+        try {
+            const backendSession = await fetchAuthenticatedSession(
+                activeSession.access_token,
+            );
+
+            if (profileRequestIdRef.current !== requestId) {
+                return null;
+            }
+
+            setProfile(backendSession.profile);
+            setProfileStatus("ready");
+            return backendSession.profile;
+        } catch (error) {
+            if (profileRequestIdRef.current !== requestId) {
+                return null;
+            }
+
+            console.error("Failed to synchronize the player profile.", error);
+            setProfile(null);
+            setProfileStatus("error");
+            setProfileError(getProfileErrorMessage(error));
+            return null;
+        }
     }, []);
+
+    useEffect(() => {
+        if (!session) {
+            return;
+        }
+
+        void refreshProfile();
+    }, [refreshProfile, session]);
 
     const signInWithPassword = useCallback(
         async ({ email, password }: PasswordCredentials) => {
@@ -105,30 +188,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }, []);
 
     const getAccessToken = useCallback(
-        () => session?.access_token ?? null,
-        [session],
+        () => sessionRef.current?.access_token ?? null,
+        [],
     );
 
     const value = useMemo<AuthContextValue>(
         () => ({
-            status: isLoading
+            status: isSessionLoading
                 ? "loading"
                 : session
                   ? "authenticated"
                   : "anonymous",
+            profileStatus,
             session,
             user: session?.user ?? null,
-            isLoading,
+            profile,
+            profileError,
+            isLoading: isSessionLoading,
             isAuthenticated: Boolean(session),
+            isProfileLoading: profileStatus === "loading",
             signInWithPassword,
             signUpWithPassword,
             signInWithGoogle,
             signOut,
             getAccessToken,
+            refreshProfile,
         }),
         [
             getAccessToken,
-            isLoading,
+            isSessionLoading,
+            profile,
+            profileError,
+            profileStatus,
+            refreshProfile,
             session,
             signInWithGoogle,
             signInWithPassword,

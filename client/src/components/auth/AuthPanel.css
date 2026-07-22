@@ -174,7 +174,7 @@
     background: rgba(15, 23, 42, 0.72);
 }
 
-.initialAccountSummary > div {
+.initialAccountIdentity {
     min-width: 0;
     display: flex;
     flex: 1;
@@ -183,15 +183,27 @@
     gap: 3px;
 }
 
-.initialAccountSummary strong,
-.initialAccountSummary span:last-child {
+.initialAccountIdentity strong,
+.initialAccountIdentity > span {
     max-width: 100%;
     overflow-wrap: anywhere;
 }
 
-.initialAccountSummary span:last-child {
+.initialAccountIdentity > span:not(.authEyebrow):not(.profileSyncError) {
     color: #94a3b8;
     font-size: 12px;
+}
+
+.profileSyncError {
+    color: #fca5a5;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.initialAccountActions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 8px;
 }
 
 .initialAccountSummary .authSecondaryButton {
@@ -209,6 +221,11 @@
     .authPanelHeading,
     .initialAccountSummary {
         align-items: stretch;
+        flex-direction: column;
+    }
+
+    .initialAccountActions {
+        width: 100%;
         flex-direction: column;
     }
 
