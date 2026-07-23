@@ -61,7 +61,7 @@ const EMPTY_RACE_EVENTS: RaceEvent[] = [];
 const sessionId = getSessionId();
 
 const socket = io(environment.serverUrl, {
-    auth: { guestSessionId: sessionId },
+    autoConnect: false,
 });
 
 
@@ -69,6 +69,7 @@ type SocketResponse = {
     ok: boolean;
     error?: string;
     roomCode?: string;
+    playerId?: string;
 };
 
 type CurrentCardDisplay = {
@@ -95,6 +96,7 @@ function App() {
         profile,
         profileError,
         isAuthenticated,
+        isLoading: isSessionLoading,
         isProfileLoading,
         refreshProfile,
         getAccessToken,
@@ -105,6 +107,7 @@ function App() {
 
     const [socketConnected, setSocketConnected] = useState(socket.connected);
     const [socketIdentityReady, setSocketIdentityReady] = useState(false);
+    const [resolvedPlayerId, setResolvedPlayerId] = useState<string | null>(null);
 
     const [reconnectStatus, setReconnectStatus] = useState<ReconnectStatus>(
         getLastRoomCode() ? "pending" : "idle",
@@ -211,6 +214,7 @@ function App() {
 
         function resetLocalRoomState(message?: string) {
             setRoom(null);
+            setResolvedPlayerId(null);
             forgetRoomCode();
 
             setPrivateState({
@@ -282,6 +286,10 @@ function App() {
                         return;
                     }
 
+                    if (response.playerId) {
+                        setResolvedPlayerId(response.playerId);
+                    }
+
                     if (response.roomCode) {
                         rememberRoomCode(response.roomCode);
 
@@ -341,6 +349,16 @@ function App() {
     }, []);
 
     useEffect(() => {
+        if (isSessionLoading) {
+            return;
+        }
+
+        if (isAuthenticated) {
+            if (isProfileLoading || !profile?.hasChosenUsername) {
+                return;
+            }
+        }
+
         const accessToken = getAccessToken();
 
         socket.auth = accessToken
@@ -348,13 +366,28 @@ function App() {
             : { guestSessionId: sessionId };
 
         setSocketIdentityReady(false);
+        setResolvedPlayerId(null);
+        reconnectAttemptInFlightRef.current = false;
 
         if (socket.connected) {
             socket.disconnect();
         }
 
         socket.connect();
-    }, [getAccessToken, isAuthenticated, profile?.id, profile?.hasChosenUsername]);
+
+        return () => {
+            if (socket.connected) {
+                socket.disconnect();
+            }
+        };
+    }, [
+        getAccessToken,
+        isAuthenticated,
+        isProfileLoading,
+        isSessionLoading,
+        profile?.hasChosenUsername,
+        profile?.id,
+    ]);
 
     useEffect(() => {
         if (activeReplay && room?.phase !== "payouts" && room?.phase !== "final") {
@@ -368,12 +401,14 @@ function App() {
         ? authenticatedPlayerName
         : playerName.trim();
 
-    const localPlayerId =
+    const expectedPlayerId =
         isAuthenticated && profile ? `auth:${profile.id}` : sessionId;
 
+    const currentPlayerId = resolvedPlayerId ?? expectedPlayerId;
+
     const me = useMemo(() => {
-        return room?.players.find((player: any) => player.id === localPlayerId);
-    }, [localPlayerId, room]);
+        return room?.players.find((player: any) => player.id === currentPlayerId);
+    }, [currentPlayerId, room]);
 
     const currentDraftPlayer = useMemo(() => {
         const currentPlayerId = room?.bettingDraft?.currentPlayerId;
@@ -395,7 +430,7 @@ function App() {
         );
     }, [room?.completedRaceReplays, room?.raceNumber]);
 
-    const isHost = room?.hostPlayerId === sessionId;
+    const isHost = room?.hostPlayerId === currentPlayerId;
 
     const racers = (room?.racers ?? EMPTY_RACERS) as RacerState[];
     const raceEvents = (room?.raceEvents ?? EMPTY_RACE_EVENTS) as RaceEvent[];
@@ -440,6 +475,10 @@ function App() {
                     return;
                 }
 
+                if (response.playerId) {
+                    setResolvedPlayerId(response.playerId);
+                }
+
                 if (response.roomCode) {
                     rememberRoomCode(response.roomCode);
 
@@ -464,6 +503,10 @@ function App() {
             (response: SocketResponse) => {
                 if (!handleSocketResponse(response)) {
                     return;
+                }
+
+                if (response.playerId) {
+                    setResolvedPlayerId(response.playerId);
                 }
 
                 if (response.roomCode) {
@@ -580,6 +623,7 @@ function App() {
                 }
 
                 setRoom(null);
+                setResolvedPlayerId(null);
                 forgetRoomCode();
 
                 setPrivateState({
@@ -1094,7 +1138,7 @@ function App() {
             {room.pause && (
                 <GamePauseOverlay
                     pause={room.pause as PublicPauseState}
-                    currentPlayerId={sessionId}
+                    currentPlayerId={currentPlayerId}
                     isHost={isHost}
                     onVote={voteOnDisconnectedPlayer}
                     onKickNow={kickDisconnectedPlayerNow}
@@ -1114,7 +1158,7 @@ function App() {
                                     className={[
                                         "player",
 
-                                        player.id === sessionId
+                                        player.id === currentPlayerId
                                             ? "playerSelf"
                                             : "",
 
@@ -1186,7 +1230,7 @@ function App() {
                                 </div>
 
                                 {isHost &&
-                                    player.id !== sessionId && (
+                                    player.id !== currentPlayerId && (
                                         <button
                                             type="button"
                                             className="lobbyKickButtonOutside"
@@ -1224,7 +1268,7 @@ function App() {
 
                     {room.phase === "betting" && (
                         <BettingPhase
-                            socketPlayerId={sessionId}
+                            socketPlayerId={currentPlayerId}
                             currentPlayerName={currentDraftPlayer?.name ?? null}
                             draft={room.bettingDraft}
                             availableTickets={room.availableTickets}
@@ -1437,7 +1481,7 @@ function App() {
                                     {room.payoutSummary ? (
                                         <PayoutSummary
                                             summary={room.payoutSummary}
-                                            currentPlayerId={sessionId}
+                                            currentPlayerId={currentPlayerId}
                                         />
                                     ) : (
                                         <p>Calculating race payouts...</p>
