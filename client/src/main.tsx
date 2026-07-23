@@ -16,9 +16,13 @@ import {
 
 import { useRaceAnimation } from "./animation/useRaceAnimation";
 import { SoundProvider } from "./audio/SoundProvider";
+import { AuthProvider } from "./auth/AuthProvider";
+import { useAuth } from "./auth/AuthContext";
 import { useGameMusic, useSound } from "./audio/useSound";
 import { Board } from "./board/Board";
 import { Podium } from "./board/Podium";
+import { AuthBackButton, AuthPanel } from "./components/auth/AuthPanel";
+import { UsernameSetup } from "./components/auth/UsernameSetup";
 import { BettingPhase } from "./components/betting/BettingPhase";
 import { CurrentSideBetCard } from "./components/betting/CurrentSideBetCard";
 import { DraftedTicketChoice } from "./components/betting/DraftedTicketChoice";
@@ -57,7 +61,7 @@ const EMPTY_RACE_EVENTS: RaceEvent[] = [];
 const sessionId = getSessionId();
 
 const socket = io(environment.serverUrl, {
-    auth: { sessionId },
+    auth: { guestSessionId: sessionId },
 });
 
 
@@ -86,9 +90,21 @@ type RoomKickedPayload = {
 type ReconnectStatus = "idle" | "pending";
 
 function App() {
+    const {
+        user,
+        profile,
+        profileError,
+        isAuthenticated,
+        isProfileLoading,
+        refreshProfile,
+        getAccessToken,
+        signOut,
+    } = useAuth();
+
     const [room, setRoom] = useState<any>(null);
 
     const [socketConnected, setSocketConnected] = useState(socket.connected);
+    const [socketIdentityReady, setSocketIdentityReady] = useState(false);
 
     const [reconnectStatus, setReconnectStatus] = useState<ReconnectStatus>(
         getLastRoomCode() ? "pending" : "idle",
@@ -102,6 +118,8 @@ function App() {
     });
 
     const [playerName, setPlayerName] = useState("");
+
+    const [continueAsGuest, setContinueAsGuest] = useState(false);
 
     const [roomCodeInput, setRoomCodeInput] = useState("");
 
@@ -165,10 +183,22 @@ function App() {
             }
 
             setSocketConnected(false);
+            setSocketIdentityReady(false);
 
             if (getLastRoomCode()) {
                 setReconnectStatus("pending");
             }
+        }
+
+
+        function handleSocketConnectError(connectionError: Error) {
+            if (disposed) {
+                return;
+            }
+
+            setSocketConnected(false);
+            setSocketIdentityReady(false);
+            setError(connectionError.message || "Could not authenticate the game connection.");
         }
 
         function handlePrivateState(updatedPrivateState: PrivatePlayerState) {
@@ -233,7 +263,6 @@ function App() {
                 "room:reconnect",
                 {
                     roomCode: rememberedRoomCode,
-                    sessionId,
                 },
                 (response: SocketResponse) => {
                     if (disposed) {
@@ -277,10 +306,12 @@ function App() {
             }
 
             setSocketConnected(true);
+            setSocketIdentityReady(true);
             reconnectToRememberedRoom();
         }
 
         socket.on("connect", handleSocketConnected);
+        socket.on("connect_error", handleSocketConnectError);
         socket.on("disconnect", handleSocketDisconnected);
         socket.on("room:update", handleRoomUpdate);
         socket.on("player:private", handlePrivateState);
@@ -301,6 +332,7 @@ function App() {
             disposed = true;
 
             socket.off("connect", handleSocketConnected);
+            socket.off("connect_error", handleSocketConnectError);
             socket.off("disconnect", handleSocketDisconnected);
             socket.off("room:update", handleRoomUpdate);
             socket.off("player:private", handlePrivateState);
@@ -309,14 +341,39 @@ function App() {
     }, []);
 
     useEffect(() => {
+        const accessToken = getAccessToken();
+
+        socket.auth = accessToken
+            ? { accessToken }
+            : { guestSessionId: sessionId };
+
+        setSocketIdentityReady(false);
+
+        if (socket.connected) {
+            socket.disconnect();
+        }
+
+        socket.connect();
+    }, [getAccessToken, isAuthenticated, profile?.id, profile?.hasChosenUsername]);
+
+    useEffect(() => {
         if (activeReplay && room?.phase !== "payouts" && room?.phase !== "final") {
             setActiveReplay(null);
         }
     }, [activeReplay, room?.phase]);
 
+    const authenticatedPlayerName = profile?.username ?? "";
+
+    const activePlayerName = isAuthenticated
+        ? authenticatedPlayerName
+        : playerName.trim();
+
+    const localPlayerId =
+        isAuthenticated && profile ? `auth:${profile.id}` : sessionId;
+
     const me = useMemo(() => {
-        return room?.players.find((player: any) => player.id === sessionId);
-    }, [room]);
+        return room?.players.find((player: any) => player.id === localPlayerId);
+    }, [localPlayerId, room]);
 
     const currentDraftPlayer = useMemo(() => {
         const currentPlayerId = room?.bettingDraft?.currentPlayerId;
@@ -376,9 +433,7 @@ function App() {
         socket.emit(
             "room:create",
             {
-                playerName: playerName.trim(),
-
-                sessionId,
+                playerName: activePlayerName,
             },
             (response: SocketResponse) => {
                 if (!handleSocketResponse(response)) {
@@ -404,9 +459,7 @@ function App() {
             {
                 roomCode: roomCodeInput.trim().toUpperCase(),
 
-                playerName: playerName.trim(),
-
-                sessionId,
+                playerName: activePlayerName,
             },
             (response: SocketResponse) => {
                 if (!handleSocketResponse(response)) {
@@ -808,50 +861,140 @@ function App() {
                 <div className="card menu">
                     <AudioMenuButton placement="initial" />
 
-                    <h1>CRAZY RACING</h1>
+                    <h1 className="initialMenuTitle">CRAZY RACING</h1>
 
-                    <p>Create a racing room or join an existing one.</p>
+                    {!isAuthenticated && !continueAsGuest ? (
+                        <AuthPanel
+                            onContinueAsGuest={() => {
+                                setContinueAsGuest(true);
+                                setError("");
+                            }}
+                        />
+                    ) : isAuthenticated &&
+                      profile?.hasChosenUsername === false ? (
+                        <UsernameSetup />
+                    ) : (
+                        <>
+                            {!isAuthenticated && continueAsGuest && (
+                                <AuthBackButton
+                                    onClick={() => {
+                                        setContinueAsGuest(false);
+                                        setPlayerName("");
+                                        setError("");
+                                    }}
+                                    disabled={reconnectStatus === "pending"}
+                                />
+                            )}
 
-                    <input
-                        type="text"
-                        placeholder="Your name"
-                        value={playerName}
-                        disabled={reconnectStatus === "pending"}
-                        onChange={(event) => setPlayerName(event.target.value)}
-                    />
+                            <p>Create a racing room or join an existing one.</p>
 
-                    <button
-                        type="button"
-                        onClick={createRoom}
-                        disabled={
-                            reconnectStatus === "pending" ||
-                            !playerName.trim()
-                        }
-                    >
-                        Create Room
-                    </button>
+                            {isAuthenticated ? (
+                                <section
+                                    className="initialAccountSummary"
+                                    aria-label="Signed-in account"
+                                >
+                                    <div className="initialAccountIdentity">
+                                        <span className="authEyebrow">SIGNED IN</span>
+                                        <strong>
+                                            {isProfileLoading
+                                                ? "Synchronizing profile…"
+                                                : authenticatedPlayerName ||
+                                                  "Profile unavailable"}
+                                        </strong>
+                                        {user?.email && <span>{user.email}</span>}
+                                        {profileError && (
+                                            <span className="profileSyncError">
+                                                {profileError}
+                                            </span>
+                                        )}
+                                    </div>
 
-                    <button
-                        type="button"
-                        onClick={joinRoom}
-                        disabled={
-                            reconnectStatus === "pending" ||
-                            !playerName.trim() ||
-                            !roomCodeInput.trim()
-                        }
-                    >
-                        Join Room
-                    </button>
+                                    <div className="initialAccountActions">
+                                        {profileError && (
+                                            <button
+                                                type="button"
+                                                className="authSecondaryButton"
+                                                onClick={() => {
+                                                    void refreshProfile();
+                                                }}
+                                                disabled={isProfileLoading}
+                                            >
+                                                Retry Profile
+                                            </button>
+                                        )}
 
-                    <input
-                        type="text"
-                        placeholder="Room code"
-                        value={roomCodeInput}
-                        disabled={reconnectStatus === "pending"}
-                        onChange={(event) =>
-                            setRoomCodeInput(event.target.value.toUpperCase())
-                        }
-                    />
+                                        <button
+                                            type="button"
+                                            className="authSecondaryButton"
+                                            onClick={() => {
+                                                void signOut().catch(() => {
+                                                    setError(
+                                                        "Could not sign out. Please try again.",
+                                                    );
+                                                });
+                                            }}
+                                            disabled={reconnectStatus === "pending"}
+                                        >
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                </section>
+                            ) : (
+                                <input
+                                    type="text"
+                                    placeholder="Your name"
+                                    value={playerName}
+                                    disabled={
+                                        reconnectStatus === "pending" ||
+                                        !socketIdentityReady
+                                    }
+                                    onChange={(event) =>
+                                        setPlayerName(event.target.value)
+                                    }
+                                />
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={createRoom}
+                                disabled={
+                                    reconnectStatus === "pending" ||
+                                    !socketIdentityReady ||
+                                    !activePlayerName
+                                }
+                            >
+                                Create Room
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={joinRoom}
+                                disabled={
+                                    reconnectStatus === "pending" ||
+                                    !socketIdentityReady ||
+                                    !activePlayerName ||
+                                    !roomCodeInput.trim()
+                                }
+                            >
+                                Join Room
+                            </button>
+
+                            <input
+                                type="text"
+                                placeholder="Room code"
+                                value={roomCodeInput}
+                                disabled={
+                                    reconnectStatus === "pending" ||
+                                    !socketIdentityReady
+                                }
+                                onChange={(event) =>
+                                    setRoomCodeInput(
+                                        event.target.value.toUpperCase(),
+                                    )
+                                }
+                            />
+                        </>
+                    )}
 
                     <div
                         className={
@@ -1514,7 +1657,9 @@ function formatPhaseName(phase: string) {
 }
 
 createRoot(document.getElementById("root")!).render(
-    <SoundProvider>
-        <App />
-    </SoundProvider>,
+    <AuthProvider>
+        <SoundProvider>
+            <App />
+        </SoundProvider>
+    </AuthProvider>,
 );

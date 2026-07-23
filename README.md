@@ -894,16 +894,24 @@ Before pushing a release, verify the following:
 
 Some ideas for future improvements include:
 
-# \- Milestone 6 - Player Profiles:
+# \- Milestone 6 - Authentication:
+
+* Email/password
+* Google login
+* Guests
+* Persistent accounts
+* Secure authentication
+
+# \- Milestone 7 - Player Profiles:
 
 * Authentication
 * Accounts
+* Profile customization
 * Statistics
 * Achievements
 * Match History
-* Discord Inegration
 
-# \- Milestone 7 - Gameplay Expansion:
+# \- Milestone 8 - Gameplay Expansion:
 
 * New mascots
 * New cards
@@ -912,7 +920,7 @@ Some ideas for future improvements include:
 * New gamemodes
 * Balance updates
 
-# \- Milestone 8 - Community \& Competition:
+# \- Milestone 9 - Community \& Competition:
 
 * Private invitations
 * Spectator rooms

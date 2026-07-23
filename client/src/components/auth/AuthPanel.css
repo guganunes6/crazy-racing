@@ -1,0 +1,370 @@
+.authPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 8px 0 18px;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.82);
+}
+
+.authPanelHeading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.authPanelHeading h2 {
+    margin: 3px 0 0;
+    color: #f8fafc;
+    font-size: 20px;
+}
+
+.authEyebrow {
+    color: #7dd3fc;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.authModeTabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    border-radius: 12px;
+    padding: 4px;
+    background: #0b1220;
+}
+
+.authModeTabs button {
+    margin: 0;
+    padding: 9px 12px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.authModeTabs .authModeTabActive {
+    background: #1e293b;
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.authForm {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.authForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.authForm input {
+    width: 100%;
+    margin: 0;
+}
+
+.authPrimaryButton,
+.authGoogleButton,
+.authGuestButton,
+.authSecondaryButton {
+    width: 100%;
+    margin: 0;
+}
+
+.authPrimaryButton {
+    margin-top: 3px;
+}
+
+.authGoogleButton,
+.authGuestButton,
+.authSecondaryButton {
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+.authGoogleButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.authGoogleLogo {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+}
+
+.authGuestButton {
+    background: transparent;
+    color: #cbd5e1;
+}
+
+.authDivider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.authDivider::before,
+.authDivider::after {
+    height: 1px;
+    flex: 1;
+    background: #334155;
+    content: "";
+}
+
+.authFeedback {
+    margin: 0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.authFeedbackSuccess {
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+    color: #bbf7d0;
+}
+
+.authFeedbackError {
+    border: 1px solid rgba(239, 68, 68, 0.38);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fecaca;
+}
+
+.authPanelLoading {
+    min-height: 72px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    color: #cbd5e1;
+}
+
+.authSpinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(125, 211, 252, 0.25);
+    border-top-color: #7dd3fc;
+    border-radius: 50%;
+    animation: authSpin 800ms linear infinite;
+}
+
+.initialAccountSummary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 13px 14px;
+    background: rgba(15, 23, 42, 0.72);
+}
+
+.initialAccountIdentity {
+    min-width: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+.initialAccountIdentity strong,
+.initialAccountIdentity > span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.initialAccountIdentity > span:not(.authEyebrow):not(.profileSyncError) {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.profileSyncError {
+    color: #fca5a5;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.initialAccountActions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+.initialAccountSummary .authSecondaryButton {
+    width: auto;
+    flex-shrink: 0;
+}
+
+@keyframes authSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .authPanelHeading,
+    .initialAccountSummary {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .initialAccountActions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .initialAccountSummary .authSecondaryButton {
+        width: 100%;
+    }
+}
+
+
+.authBackButton {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 2;
+    display: inline-flex;
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    border: 1px solid #475569;
+    border-radius: 50%;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.88);
+    color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.authBackButton:hover:not(:disabled) {
+    border-color: #7dd3fc;
+    background: #1e293b;
+    color: #f8fafc;
+    transform: translateX(-1px);
+}
+
+.authBackButton:focus-visible {
+    outline: 3px solid rgba(125, 211, 252, 0.42);
+    outline-offset: 2px;
+}
+
+.authBackButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.authBackButton svg {
+    width: 23px;
+    height: 23px;
+}
+
+.menu {
+    position: relative;
+}
+
+.usernameSetup {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 8px 0 18px;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 18px;
+    background: rgba(15, 23, 42, 0.82);
+    text-align: left;
+}
+
+.usernameSetupHeading {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.usernameSetupHeading h2,
+.usernameSetupHeading p {
+    margin: 0;
+}
+
+.usernameSetupHeading h2 {
+    color: #f8fafc;
+    font-size: 21px;
+}
+
+.usernameSetupHeading p {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.usernameSetupForm {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.usernameSetupForm label {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.usernameSetupForm input {
+    width: 100%;
+    margin: 0;
+}
+
+.usernameRules,
+.usernameSetupAccount {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.usernameAvailability {
+    min-height: 18px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.usernameAvailability-idle,
+.usernameAvailability-checking {
+    color: #94a3b8;
+}
+
+.usernameAvailability-available {
+    color: #86efac;
+}
+
+.usernameAvailability-unavailable,
+.usernameAvailability-error {
+    color: #fca5a5;
+}
+
+.usernameSetupAccount {
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.usernameSetupSignOut {
+    width: 100%;
+}
