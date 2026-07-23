@@ -12,6 +12,10 @@ import {
 } from "@crazy-racing/shared";
 
 import { authRouter } from "./auth/index.js";
+import {
+    resolveSocketPlayerIdentity,
+    type SocketPlayerIdentity,
+} from "./auth/socketIdentity.js";
 
 import {
     createRoom,
@@ -149,14 +153,14 @@ function getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : "Unknown error";
 }
 
-function requireSessionId(value: unknown): string {
-    const sessionId = String(value ?? "").trim();
+function socketIdentity(socket: { data: Record<string, unknown> }): SocketPlayerIdentity {
+    const identity = socket.data.playerIdentity;
 
-    if (sessionId.length < 8 || sessionId.length > 128) {
-        throw new Error("Invalid player session.");
+    if (!identity) {
+        throw new Error("Player identity is unavailable.");
     }
 
-    return sessionId;
+    return identity as SocketPlayerIdentity;
 }
 
 function publicRoom(room: Room) {
@@ -314,18 +318,31 @@ function requireHost(room: Room, socketId: string): void {
     }
 }
 
+io.use(async (socket, next) => {
+    try {
+        socket.data.playerIdentity = await resolveSocketPlayerIdentity(socket);
+        next();
+    } catch (error) {
+        next(new Error(getErrorMessage(error)));
+    }
+});
+
 io.on("connection", (socket) => {
     logger.info("socket_connected", {
         socketId: socket.id,
         transport: socket.conn.transport.name,
+        identityKind: socketIdentity(socket).kind,
     });
 
-    socket.on("room:create", ({ playerName, sessionId }, callback) => {
+    socket.on("room:create", ({ playerName }, callback) => {
         try {
+            const identity = socketIdentity(socket);
             const room = createRoom(
                 socket.id,
-                requireSessionId(sessionId),
-                playerName,
+                identity.playerId,
+                identity.kind === "authenticated"
+                    ? identity.playerName
+                    : playerName,
             );
 
             rooms.set(room.roomCode, room);
@@ -346,15 +363,16 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("room:join", ({ roomCode, playerName, sessionId }, callback) => {
+    socket.on("room:join", ({ roomCode, playerName }, callback) => {
         try {
+            const identity = socketIdentity(socket);
             const room = rooms.get(String(roomCode).trim().toUpperCase());
 
             if (!room) {
                 throw new Error("Room not found.");
             }
 
-            const normalizedSessionId = requireSessionId(sessionId);
+            const normalizedSessionId = identity.playerId;
 
             const existingPlayer = room.players.find(
                 (player) => player.sessionId === normalizedSessionId,
@@ -377,7 +395,9 @@ io.on("connection", (socket) => {
                     room,
                     socket.id,
                     normalizedSessionId,
-                    playerName,
+                    identity.kind === "authenticated"
+                        ? identity.playerName
+                        : playerName,
                 );
             }
 
@@ -438,8 +458,9 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("room:reconnect", ({ roomCode, sessionId }, callback) => {
+    socket.on("room:reconnect", ({ roomCode }, callback) => {
         try {
+            const identity = socketIdentity(socket);
             const normalizedRoomCode = String(roomCode).trim().toUpperCase();
             const room = rooms.get(normalizedRoomCode);
 
@@ -447,7 +468,7 @@ io.on("connection", (socket) => {
 
             const player = reattachPlayer(
                 room,
-                requireSessionId(sessionId),
+                identity.playerId,
                 socket.id,
             );
 

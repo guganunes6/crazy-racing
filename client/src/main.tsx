@@ -61,7 +61,7 @@ const EMPTY_RACE_EVENTS: RaceEvent[] = [];
 const sessionId = getSessionId();
 
 const socket = io(environment.serverUrl, {
-    auth: { sessionId },
+    auth: { guestSessionId: sessionId },
 });
 
 
@@ -97,12 +97,14 @@ function App() {
         isAuthenticated,
         isProfileLoading,
         refreshProfile,
+        getAccessToken,
         signOut,
     } = useAuth();
 
     const [room, setRoom] = useState<any>(null);
 
     const [socketConnected, setSocketConnected] = useState(socket.connected);
+    const [socketIdentityReady, setSocketIdentityReady] = useState(false);
 
     const [reconnectStatus, setReconnectStatus] = useState<ReconnectStatus>(
         getLastRoomCode() ? "pending" : "idle",
@@ -181,10 +183,22 @@ function App() {
             }
 
             setSocketConnected(false);
+            setSocketIdentityReady(false);
 
             if (getLastRoomCode()) {
                 setReconnectStatus("pending");
             }
+        }
+
+
+        function handleSocketConnectError(connectionError: Error) {
+            if (disposed) {
+                return;
+            }
+
+            setSocketConnected(false);
+            setSocketIdentityReady(false);
+            setError(connectionError.message || "Could not authenticate the game connection.");
         }
 
         function handlePrivateState(updatedPrivateState: PrivatePlayerState) {
@@ -249,7 +263,6 @@ function App() {
                 "room:reconnect",
                 {
                     roomCode: rememberedRoomCode,
-                    sessionId,
                 },
                 (response: SocketResponse) => {
                     if (disposed) {
@@ -293,10 +306,12 @@ function App() {
             }
 
             setSocketConnected(true);
+            setSocketIdentityReady(true);
             reconnectToRememberedRoom();
         }
 
         socket.on("connect", handleSocketConnected);
+        socket.on("connect_error", handleSocketConnectError);
         socket.on("disconnect", handleSocketDisconnected);
         socket.on("room:update", handleRoomUpdate);
         socket.on("player:private", handlePrivateState);
@@ -317,12 +332,29 @@ function App() {
             disposed = true;
 
             socket.off("connect", handleSocketConnected);
+            socket.off("connect_error", handleSocketConnectError);
             socket.off("disconnect", handleSocketDisconnected);
             socket.off("room:update", handleRoomUpdate);
             socket.off("player:private", handlePrivateState);
             socket.off("room:kicked", handleRoomKicked);
         };
     }, []);
+
+    useEffect(() => {
+        const accessToken = getAccessToken();
+
+        socket.auth = accessToken
+            ? { accessToken }
+            : { guestSessionId: sessionId };
+
+        setSocketIdentityReady(false);
+
+        if (socket.connected) {
+            socket.disconnect();
+        }
+
+        socket.connect();
+    }, [getAccessToken, isAuthenticated, profile?.id, profile?.hasChosenUsername]);
 
     useEffect(() => {
         if (activeReplay && room?.phase !== "payouts" && room?.phase !== "final") {
@@ -336,9 +368,12 @@ function App() {
         ? authenticatedPlayerName
         : playerName.trim();
 
+    const localPlayerId =
+        isAuthenticated && profile ? `auth:${profile.id}` : sessionId;
+
     const me = useMemo(() => {
-        return room?.players.find((player: any) => player.id === sessionId);
-    }, [room]);
+        return room?.players.find((player: any) => player.id === localPlayerId);
+    }, [localPlayerId, room]);
 
     const currentDraftPlayer = useMemo(() => {
         const currentPlayerId = room?.bettingDraft?.currentPlayerId;
@@ -399,8 +434,6 @@ function App() {
             "room:create",
             {
                 playerName: activePlayerName,
-
-                sessionId,
             },
             (response: SocketResponse) => {
                 if (!handleSocketResponse(response)) {
@@ -427,8 +460,6 @@ function App() {
                 roomCode: roomCodeInput.trim().toUpperCase(),
 
                 playerName: activePlayerName,
-
-                sessionId,
             },
             (response: SocketResponse) => {
                 if (!handleSocketResponse(response)) {
@@ -913,7 +944,10 @@ function App() {
                                     type="text"
                                     placeholder="Your name"
                                     value={playerName}
-                                    disabled={reconnectStatus === "pending"}
+                                    disabled={
+                                        reconnectStatus === "pending" ||
+                                        !socketIdentityReady
+                                    }
                                     onChange={(event) =>
                                         setPlayerName(event.target.value)
                                     }
@@ -925,6 +959,7 @@ function App() {
                                 onClick={createRoom}
                                 disabled={
                                     reconnectStatus === "pending" ||
+                                    !socketIdentityReady ||
                                     !activePlayerName
                                 }
                             >
@@ -936,6 +971,7 @@ function App() {
                                 onClick={joinRoom}
                                 disabled={
                                     reconnectStatus === "pending" ||
+                                    !socketIdentityReady ||
                                     !activePlayerName ||
                                     !roomCodeInput.trim()
                                 }
@@ -947,7 +983,10 @@ function App() {
                                 type="text"
                                 placeholder="Room code"
                                 value={roomCodeInput}
-                                disabled={reconnectStatus === "pending"}
+                                disabled={
+                                    reconnectStatus === "pending" ||
+                                    !socketIdentityReady
+                                }
                                 onChange={(event) =>
                                     setRoomCodeInput(
                                         event.target.value.toUpperCase(),
