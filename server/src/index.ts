@@ -352,6 +352,7 @@ io.on("connection", (socket) => {
             callback({
                 ok: true,
                 roomCode: room.roomCode,
+                playerId: identity.playerId,
             });
 
             emitRoom(room);
@@ -406,6 +407,7 @@ io.on("connection", (socket) => {
             callback({
                 ok: true,
                 roomCode: room.roomCode,
+                playerId: identity.playerId,
             });
 
             emitRoom(room);
@@ -481,7 +483,11 @@ io.on("connection", (socket) => {
             reconnectionManager.cancel(room.roomCode, player.id);
 
             socket.join(room.roomCode);
-            callback({ ok: true, roomCode: room.roomCode });
+            callback({
+                ok: true,
+                roomCode: room.roomCode,
+                playerId: identity.playerId,
+            });
             emitRoom(room);
         } catch (error) {
             callback({ ok: false, error: getErrorMessage(error) });
