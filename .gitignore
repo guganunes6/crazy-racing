@@ -3,8 +3,8 @@ dist/
 **/.env*
 .env
 .env.local
+.env.development
 .env.*.local
-client/.env.development
 client/.env.local
 client/.env.production.local
 server/.env
