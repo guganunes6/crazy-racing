@@ -9,6 +9,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 
 import {
+    AuthApiError,
     fetchAuthenticatedSession,
     fetchUsernameAvailability,
     updateProfileUsername,
@@ -23,6 +24,8 @@ import type {
 } from "./authTypes";
 import { supabase } from "./supabaseClient";
 
+const SESSION_REFRESH_MARGIN_MS = 60_000;
+
 function getProfileErrorMessage(error: unknown): string {
     if (error instanceof TypeError) {
         return "Could not reach the Crazy Racing server to load your profile.";
@@ -35,6 +38,24 @@ function getProfileErrorMessage(error: unknown): string {
     return "Could not load your Crazy Racing profile.";
 }
 
+function shouldRefreshSession(session: Session): boolean {
+    if (!session.expires_at) {
+        return true;
+    }
+
+    const expiresAtMs = session.expires_at * 1000;
+
+    return expiresAtMs <= Date.now() + SESSION_REFRESH_MARGIN_MS;
+}
+
+function isInvalidAccessTokenError(error: unknown): boolean {
+    return (
+        error instanceof AuthApiError &&
+        error.status === 401 &&
+        error.code === "INVALID_ACCESS_TOKEN"
+    );
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
     const [session, setSession] = useState<Session | null>(null);
     const [isSessionLoading, setIsSessionLoading] = useState(true);
@@ -45,6 +66,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     const sessionRef = useRef<Session | null>(null);
     const profileRequestIdRef = useRef(0);
+    const sessionRefreshPromiseRef =
+        useRef<Promise<Session | null> | null>(null);
 
     const applySession = useCallback((nextSession: Session | null) => {
         sessionRef.current = nextSession;
@@ -59,20 +82,110 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
     }, []);
 
+    const refreshSupabaseSession = useCallback(async (): Promise<Session | null> => {
+        if (sessionRefreshPromiseRef.current) {
+            return sessionRefreshPromiseRef.current;
+        }
+
+        const refreshPromise = (async () => {
+            const {
+                data: { session: refreshedSession },
+                error,
+            } = await supabase.auth.refreshSession();
+
+            if (error || !refreshedSession) {
+                if (error) {
+                    console.error(
+                        "Failed to refresh the Supabase session.",
+                        error,
+                    );
+                }
+
+                return null;
+            }
+
+            applySession(refreshedSession);
+            return refreshedSession;
+        })();
+
+        sessionRefreshPromiseRef.current = refreshPromise;
+
+        try {
+            return await refreshPromise;
+        } finally {
+            sessionRefreshPromiseRef.current = null;
+        }
+    }, [applySession]);
+
+    const getFreshSession = useCallback(async (): Promise<Session | null> => {
+        const activeSession = sessionRef.current;
+
+        if (!activeSession) {
+            return null;
+        }
+
+        if (!shouldRefreshSession(activeSession)) {
+            return activeSession;
+        }
+
+        return refreshSupabaseSession();
+    }, [refreshSupabaseSession]);
+
     useEffect(() => {
         let isMounted = true;
 
-        void supabase.auth.getSession().then(({ data, error }) => {
+        const restoreSession = async () => {
+            const {
+                data: { session: restoredSession },
+                error,
+            } = await supabase.auth.getSession();
+
             if (!isMounted) {
                 return;
             }
 
             if (error) {
-                console.error("Failed to restore the Supabase session.", error);
+                console.error(
+                    "Failed to restore the Supabase session.",
+                    error,
+                );
+                applySession(null);
+                return;
             }
 
-            applySession(data.session ?? null);
-        });
+            if (!restoredSession) {
+                applySession(null);
+                return;
+            }
+
+            /*
+             * getSession() can return the session stored in localStorage even
+             * when its access token is already expired. Refresh it before the
+             * application starts making authenticated backend requests.
+             */
+            if (shouldRefreshSession(restoredSession)) {
+                sessionRef.current = restoredSession;
+
+                const refreshedSession = await refreshSupabaseSession();
+
+                if (!isMounted) {
+                    return;
+                }
+
+                if (!refreshedSession) {
+                    await supabase.auth.signOut();
+                    applySession(null);
+                    return;
+                }
+
+                applySession(refreshedSession);
+                return;
+            }
+
+            applySession(restoredSession);
+        };
+
+        void restoreSession();
 
         const {
             data: { subscription },
@@ -88,10 +201,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
             isMounted = false;
             subscription.unsubscribe();
         };
-    }, [applySession]);
+    }, [applySession, refreshSupabaseSession]);
 
     const refreshProfile = useCallback(async () => {
-        const activeSession = sessionRef.current;
+        let activeSession = await getFreshSession();
 
         if (!activeSession) {
             setProfile(null);
@@ -107,9 +220,36 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setProfileError(null);
 
         try {
-            const backendSession = await fetchAuthenticatedSession(
-                activeSession.access_token,
-            );
+            let backendSession;
+
+            try {
+                backendSession = await fetchAuthenticatedSession(
+                    activeSession.access_token,
+                );
+            } catch (error) {
+                /*
+                 * The token may have become invalid between restoration and
+                 * the request, or Supabase may not have refreshed it yet.
+                 * Refresh once and retry with the newly issued token.
+                 */
+                if (!isInvalidAccessTokenError(error)) {
+                    throw error;
+                }
+
+                const refreshedSession = await refreshSupabaseSession();
+
+                if (!refreshedSession) {
+                    await supabase.auth.signOut();
+                    applySession(null);
+                    throw error;
+                }
+
+                activeSession = refreshedSession;
+
+                backendSession = await fetchAuthenticatedSession(
+                    activeSession.access_token,
+                );
+            }
 
             if (profileRequestIdRef.current !== requestId) {
                 return null;
@@ -123,13 +263,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
                 return null;
             }
 
-            console.error("Failed to synchronize the player profile.", error);
+            console.error(
+                "Failed to synchronize the player profile.",
+                error,
+            );
+
             setProfile(null);
             setProfileStatus("error");
             setProfileError(getProfileErrorMessage(error));
             return null;
         }
-    }, []);
+    }, [
+        applySession,
+        getFreshSession,
+        refreshSupabaseSession,
+    ]);
 
     useEffect(() => {
         if (!session) {
@@ -196,35 +344,98 @@ export function AuthProvider({ children }: PropsWithChildren) {
         [],
     );
 
-    const requireAccessToken = useCallback(() => {
-        const accessToken = sessionRef.current?.access_token;
-
-        if (!accessToken) {
-            throw new Error("You must be signed in to manage your username.");
-        }
-
-        return accessToken;
-    }, []);
-
     const checkUsernameAvailability = useCallback(
-        async (username: string) =>
-            fetchUsernameAvailability(requireAccessToken(), username),
-        [requireAccessToken],
+        async (username: string) => {
+            let activeSession = await getFreshSession();
+
+            if (!activeSession) {
+                throw new Error(
+                    "You must be signed in to manage your username.",
+                );
+            }
+
+            try {
+                return await fetchUsernameAvailability(
+                    activeSession.access_token,
+                    username,
+                );
+            } catch (error) {
+                if (!isInvalidAccessTokenError(error)) {
+                    throw error;
+                }
+
+                const refreshedSession = await refreshSupabaseSession();
+
+                if (!refreshedSession) {
+                    await supabase.auth.signOut();
+                    applySession(null);
+                    throw error;
+                }
+
+                activeSession = refreshedSession;
+
+                return fetchUsernameAvailability(
+                    activeSession.access_token,
+                    username,
+                );
+            }
+        },
+        [
+            applySession,
+            getFreshSession,
+            refreshSupabaseSession,
+        ],
     );
 
     const chooseUsername = useCallback(
         async (username: string) => {
-            const updatedProfile = await updateProfileUsername(
-                requireAccessToken(),
-                username,
-            );
+            let activeSession = await getFreshSession();
+
+            if (!activeSession) {
+                throw new Error(
+                    "You must be signed in to manage your username.",
+                );
+            }
+
+            let updatedProfile: CrazyRacingProfile;
+
+            try {
+                updatedProfile = await updateProfileUsername(
+                    activeSession.access_token,
+                    username,
+                );
+            } catch (error) {
+                if (!isInvalidAccessTokenError(error)) {
+                    throw error;
+                }
+
+                const refreshedSession = await refreshSupabaseSession();
+
+                if (!refreshedSession) {
+                    await supabase.auth.signOut();
+                    applySession(null);
+                    throw error;
+                }
+
+                activeSession = refreshedSession;
+
+                updatedProfile = await updateProfileUsername(
+                    activeSession.access_token,
+                    username,
+                );
+            }
 
             setProfile(updatedProfile);
             setProfileStatus("ready");
             setProfileError(null);
+
             return updatedProfile;
         },
-        [requireAccessToken],
+        [
+            applySession,
+            getFreshSession,
+            refreshSupabaseSession,
+        ],
     );
 
     const value = useMemo<AuthContextValue>(
@@ -232,8 +443,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
             status: isSessionLoading
                 ? "loading"
                 : session
-                  ? "authenticated"
-                  : "anonymous",
+                    ? "authenticated"
+                    : "anonymous",
             profileStatus,
             session,
             user: session?.user ?? null,
@@ -268,5 +479,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         ],
     );
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
